@@ -226,10 +226,49 @@
         });
     });
 
+    /* --- UPDATED TRANSMIT PROTOCOL --- */
     function transmit(url, name) {
         let target = url.startsWith('http') ? url : `https://${url}`;
-        window.parent.postMessage({ type: 'load_site', url: PROXY + target, name: name.toUpperCase() }, '*');
+        
+        // Add Proxy if not already present
+        if (!target.includes(PROXY)) target = PROXY + target;
+
+        // Visual feedback on the Node
+        const nodes = document.querySelectorAll('.node');
+        nodes.forEach(n => {
+            if(n.innerText.toUpperCase().includes(name.toUpperCase())) {
+                n.style.boxShadow = "0 0 50px #fff";
+                n.style.borderColor = "#fff";
+                setTimeout(() => {
+                    n.style.boxShadow = "";
+                    n.style.borderColor = "";
+                }, 400);
+            }
+        });
+
+        // TRANSMIT TO PARENT
+        window.parent.postMessage({ 
+            type: 'load_site', 
+            url: target, 
+            name: name.toUpperCase() 
+        }, '*');
     }
+
+    // Ensure the hub search bar also transmits to the main shell
+    document.getElementById('browser-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            const val = e.target.value.trim();
+            if (val) {
+                if (val.includes('.') && !val.includes(' ')) {
+                    transmit(val, val);
+                } else {
+                    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(val)}&igu=1`;
+                    transmit(searchUrl, "SEARCH: " + val);
+                }
+                e.target.value = '';
+            }
+        }
+    });
 
     function neuralRandomizer() {
         const all = Object.values(data).flat();
