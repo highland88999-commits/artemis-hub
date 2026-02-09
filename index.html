@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artemis • Hub</title>
+    <style>
+        :root {
+            --cyan: #00f2ff;
+            --bg: #000;
+            --glass: rgba(0, 242, 255, 0.05);
+            --border: rgba(0, 242, 255, 0.2);
+        }
+        body { 
+            background: var(--bg); color: var(--cyan); 
+            font-family: 'Courier New', monospace; margin: 0; padding: 20px;
+            overflow-x: hidden;
+        }
+        /* Search Bar Aesthetics */
+        .search-container {
+            position: sticky; top: 0; background: var(--bg);
+            padding: 20px 0; z-index: 100; border-bottom: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+        #browser-input {
+            width: 100%; background: var(--glass); border: 1px solid var(--cyan);
+            padding: 15px; color: var(--cyan); font-size: 1.1rem; outline: none;
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
+        }
+        /* Grid Layout */
+        .grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 15px; padding-bottom: 50px;
+        }
+        .node {
+            background: var(--glass); border: 1px solid var(--border);
+            padding: 15px; text-align: center; cursor: pointer;
+            transition: all 0.3s ease; position: relative; overflow: hidden;
+        }
+        .node:hover {
+            background: var(--cyan); color: #000;
+            box-shadow: 0 0 20px var(--cyan); transform: translateY(-3px);
+        }
+        .node span { font-size: 0.8rem; font-weight: bold; text-transform: uppercase; }
+        .node small { display: block; font-size: 0.6rem; margin-top: 5px; opacity: 0.6; }
+        
+        /* Category Badges */
+        .badge { font-size: 0.5rem; position: absolute; top: 5px; right: 5px; opacity: 0.5; }
+    </style>
+</head>
+<body>
+
+<div class="search-container">
+    <input type="text" id="browser-input" placeholder="ENTER URL OR SEARCH ARCHIVES..." autocomplete="off">
+</div>
+
+<div class="grid" id="node-grid"></div>
+
+<script>
+    // 1. YOUR CONFIGURATION
+    const PROXY_URL = "https://YOUR-PROXY-URL.onrender.com/"; // Replace with your Render Proxy URL
+    
+    // 2. THE 100 NODES (Truncated for brevity, add yours here)
+    const sites = [
+        { name: "Wikipedia", url: "https://en.wikipedia.org", cat: "INTEL" },
+        { name: "DuckDuckGo", url: "https://duckduckgo.com", cat: "SEARCH" },
+        { name: "WolframAlpha", url: "https://www.wolframalpha.com", cat: "DATA" },
+        { name: "GitHub", url: "https://github.com", cat: "FORGE" },
+        { name: "Windy", url: "https://www.windy.com", cat: "MAPS" },
+        { name: "TradingView", url: "https://www.tradingview.com", cat: "FIN" },
+        { name: "DevDocs", url: "https://devdocs.io", cat: "DOCS" },
+        { name: "CodePen", url: "https://codepen.io", cat: "FORGE" },
+        { name: "HackerNews", url: "https://news.ycombinator.com", cat: "PULSE" },
+        { name: "Reddit", url: "https://reddit.com", cat: "SOCIAL" },
+        { name: "Internet Archive", url: "https://archive.org", cat: "INTEL" },
+        { name: "NASA", url: "https://nasa.gov", cat: "EXPLORE" },
+        { name: "Speedtest", url: "https://speedtest.net", cat: "UTIL" },
+        { name: "DeepL", url: "https://deepl.com", cat: "LANG" },
+        { name: "VirusTotal", url: "https://virustotal.com", cat: "SEC" },
+        // ... Continue adding up to 100
+    ];
+
+    const grid = document.getElementById('node-grid');
+    const searchInput = document.getElementById('browser-input');
+
+    // Function to load a site into the Artemis Holoframe
+    function transmit(url) {
+        let finalUrl = url.startsWith('http') ? url : `https://${url}`;
+        // Apply proxy to bypass X-Frame-Options
+        const proxiedUrl = PROXY_URL + finalUrl;
+        window.parent.postMessage({ type: 'load_site', url: proxiedUrl }, '*');
+    }
+
+    // Render the grid
+    function renderGrid(filter = "") {
+        grid.innerHTML = "";
+        const filtered = sites.filter(s => s.name.toLowerCase().includes(filter.toLowerCase()));
+        filtered.forEach(site => {
+            const div = document.createElement('div');
+            div.className = 'node';
+            div.innerHTML = `<div class="badge">${site.cat}</div><span>${site.name}</span><small>${site.url.replace('https://','')}</small>`;
+            div.onclick = () => transmit(site.url);
+            grid.appendChild(div);
+        });
+    }
+
+    // Search Bar Logic (Browser Simulation)
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            const val = searchInput.value;
+            if (val.includes('.') && !val.includes(' ')) {
+                // If it looks like a URL, go there
+                transmit(val);
+            } else {
+                // Otherwise, search via DuckDuckGo
+                transmit(`https://duckduckgo.com/?q=${encodeURIComponent(val)}`);
+            }
+        }
+    });
+
+    searchInput.addEventListener('input', (e) => renderGrid(e.target.value));
+
+    renderGrid();
+</script>
+</body>
+</html>
