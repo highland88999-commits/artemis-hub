@@ -2,229 +2,299 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>ARTEMIS • NEXUS HUB 100</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ARTEMIS • NEXUS HUB</title>
     <style>
         :root { 
             --cyan: #00f2ff; 
-            --bg: #000; 
-            --glass: rgba(0, 242, 255, 0.08); 
-            --silver: #c0c0c0; 
-            --neon-glow: 0 0 15px rgba(0, 242, 255, 0.6);
+            --bg: #050a10; 
+            --glass: rgba(0, 242, 255, 0.05); 
+            --border: rgba(0, 242, 255, 0.3);
+            --neon-glow: 0 0 10px rgba(0, 242, 255, 0.4);
         }
         
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         body { 
-            background: var(--bg); 
+            background: transparent; /* Allows OS wallpaper to show through if iframe is transparent */
             color: var(--cyan); 
             font-family: 'Courier New', monospace; 
             margin: 0; padding: 0; 
             height: 100vh; overflow: hidden; 
             display: flex; flex-direction: column; 
+            user-select: none;
         }
 
-        /* --- ARTEMIS BOOT OVERLAY --- */
-        #artemis-boot {
-            position: fixed; inset: 0;
-            background: #000; z-index: 9999;
-            display: flex; align-items: center; justify-content: center;
-            transition: opacity 1.5s ease-out;
+        /* --- BACKGROUND (Optional Internal Wallpaper) --- */
+        body::before {
+            content: ""; position: fixed; inset: 0;
+            background: radial-gradient(circle at top, rgba(0, 242, 255, 0.1) 0%, transparent 60%);
+            z-index: -1; pointer-events: none;
         }
-        .boot-content { text-align: center; width: 300px; }
-        .boot-logo {
-            font-size: 2.5rem; letter-spacing: 15px;
-            color: var(--cyan); text-shadow: var(--neon-glow);
-            margin-bottom: 20px; animation: text-flicker 0.1s infinite alternate;
-        }
-        .boot-status { font-size: 0.7rem; color: #fff; opacity: 0.6; text-transform: uppercase; margin-bottom: 10px; min-height: 15px; }
-        .boot-bar-container { width: 100%; height: 2px; background: rgba(0, 242, 255, 0.1); position: relative; overflow: hidden; }
-        .boot-bar-fill { position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); transition: width 0.3s; }
 
-        /* --- BACKGROUND & VIEWPORT --- */
-        #bg-video {
-            position: fixed; top: 50%; left: 50%; min-width: 100%; min-height: 100%;
-            transform: translate(-50%, -50%); z-index: -2; object-fit: cover;
-            filter: brightness(0.4) contrast(1.1);
+        /* --- OMNIBOX (Search/URL) --- */
+        .omnibox-container {
+            padding: 20px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9), rgba(0,0,0,0.0));
+            z-index: 100;
+            display: flex; gap: 10px; flex-direction: column;
+            align-items: center;
         }
+
+        .search-wrapper {
+            position: relative; width: 100%; max-width: 600px;
+            display: flex; align-items: center;
+        }
+
+        #browser-input { 
+            width: 100%; 
+            background: rgba(0, 10, 20, 0.8); 
+            border: 1px solid var(--border); 
+            padding: 15px 45px 15px 20px; 
+            border-radius: 50px;
+            color: #fff; font-size: 16px; font-family: inherit; letter-spacing: 1px;
+            outline: none; text-align: left; 
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            transition: 0.3s;
+        }
+        #browser-input:focus { border-color: var(--cyan); box-shadow: var(--neon-glow); }
+        
+        .search-icon {
+            position: absolute; right: 15px; color: var(--cyan); opacity: 0.7;
+            pointer-events: none; font-size: 18px;
+        }
+
+        /* --- SWIPEABLE SECTORS --- */
         .nexus-viewport { 
-            flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; 
-            scrollbar-width: none; scroll-behavior: smooth;
-            filter: blur(20px) brightness(0); transition: 2s cubic-bezier(0.19, 1, 0.22, 1);
+            flex: 1; display: flex; 
+            overflow-x: auto; 
+            overflow-y: hidden;
+            scroll-snap-type: x mandatory; 
+            scrollbar-width: none; 
+            scroll-behavior: smooth;
+            padding-bottom: 20px;
         }
-        body.ready .nexus-viewport { filter: blur(0) brightness(1); }
+        .nexus-viewport::-webkit-scrollbar { display: none; }
 
         .sector-page { 
-            min-width: 100%; height: 100%; padding: 25px; scroll-snap-align: start; 
-            display: flex; flex-direction: column; opacity: 0; transition: all 0.8s;
+            min-width: 100vw; 
+            height: 100%; 
+            padding: 10px 20px; 
+            scroll-snap-align: start; 
+            display: flex; flex-direction: column; 
+            overflow-y: auto; /* Allow vertical scrolling within the page */
         }
-        .sector-page.reveal { opacity: 1; }
-        .sector-title { font-size: 1.8rem; letter-spacing: 8px; margin-bottom: 25px; border-left: 5px solid var(--cyan); padding-left: 15px; text-shadow: var(--neon-glow); color: #fff; }
 
-        /* --- GRID & NODES --- */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 12px; overflow-y: auto; padding-bottom: 50px; }
+        .sector-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 20px; border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+        .sector-title { 
+            font-size: 1.2rem; letter-spacing: 4px; font-weight: bold; 
+            color: #fff; text-shadow: var(--neon-glow); 
+        }
+        .sector-count { font-size: 0.8rem; opacity: 0.6; }
+
+        /* --- APP GRID (Mobile Responsive) --- */
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); /* 2 Columns on Mobile */
+            gap: 15px; 
+            padding-bottom: 80px; 
+        }
+        
+        @media (min-width: 768px) {
+            .grid { grid-template-columns: repeat(4, 1fr); gap: 20px; } /* 4 on Desktop */
+            .sector-page { padding: 20px 10%; }
+        }
+
         .node { 
-            background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(0, 242, 255, 0.2); 
-            padding: 15px; text-align: center; cursor: pointer; transition: 0.3s; 
-            border-radius: 4px; display: flex; flex-direction: column; justify-content: center;
-            min-height: 85px; backdrop-filter: blur(8px); position: relative;
+            background: rgba(0, 15, 25, 0.6); 
+            border: 1px solid rgba(0, 242, 255, 0.15); 
+            padding: 20px 10px; 
+            border-radius: 12px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; gap: 8px;
+            cursor: pointer; position: relative; overflow: hidden;
+            transition: 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            backdrop-filter: blur(5px);
         }
-        .node:hover { background: var(--cyan); color: #000; box-shadow: 0 0 25px var(--cyan); transform: translateY(-3px); }
-        .node.spectral-out { opacity: 0.1; filter: grayscale(1); pointer-events: none; }
+        .node:active { transform: scale(0.96); background: rgba(0, 242, 255, 0.1); }
+        .node:hover { border-color: var(--cyan); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
 
-        /* Target Lock Animation */
-        .node.ping::after {
-            content: ""; position: absolute; inset: -5px; border: 1px solid var(--cyan);
-            animation: target-lock 0.6s ease-out forwards;
+        .node-icon { font-size: 24px; margin-bottom: 5px; filter: drop-shadow(0 0 5px var(--cyan)); }
+        .node-name { font-size: 12px; font-weight: bold; color: #eee; letter-spacing: 1px; }
+        .node-url { font-size: 9px; color: var(--cyan); opacity: 0.5; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* --- NAVIGATION DOTS --- */
+        .nav-footer {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: linear-gradient(to top, #000 20%, transparent);
+            padding: 20px 0; display: flex; justify-content: center; align-items: center;
+            gap: 12px; pointer-events: none; /* Let clicks pass through to grid behind if needed */
         }
-        @keyframes target-lock { 0% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
+        .dot { 
+            width: 8px; height: 8px; border-radius: 50%; 
+            background: rgba(255,255,255,0.2); 
+            transition: 0.3s; pointer-events: auto; cursor: pointer;
+        }
+        .dot.active { 
+            background: var(--cyan); 
+            box-shadow: 0 0 10px var(--cyan); 
+            transform: scale(1.5); 
+        }
 
-        /* --- UI COMPONENTS --- */
-        .header-nav { padding: 15px; border-bottom: 1px solid rgba(0, 242, 255, 0.3); background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); z-index: 10; display: flex; gap: 10px; }
-        #browser-input { flex: 1; background: rgba(0, 0, 0, 0.5); border: 1px solid var(--cyan); padding: 12px; color: var(--cyan); font-size: 1rem; outline: none; text-align: center; box-shadow: var(--neon-glow); }
-        .nav-dots { display: flex; justify-content: center; gap: 10px; padding: 20px; background: rgba(0,0,0,0.8); border-top: 1px solid rgba(192,192,192,0.1); }
-        .dot { width: 30px; height: 4px; background: rgba(0, 242, 255, 0.2); cursor: pointer; transition: 0.4s; }
-        .dot.active { background: var(--cyan); box-shadow: 0 0 15px var(--cyan); width: 60px; }
     </style>
 </head>
 <body>
 
-<div id="artemis-boot">
-    <div class="boot-content">
-        <div class="boot-logo">ARTEMIS</div>
-        <div class="boot-status" id="status-log">INITIALIZING NEURAL LINK...</div>
-        <div class="boot-bar-container"><div class="boot-bar-fill" id="boot-progress"></div></div>
+<div class="omnibox-container">
+    <div class="search-wrapper">
+        <input type="text" id="browser-input" placeholder="SEARCH OR ENTER URL..." autocomplete="off">
+        <div class="search-icon">🔍</div>
     </div>
 </div>
 
-<video id="bg-video" autoplay loop muted playsinline>
-    <source src="https://raw.githubusercontent.com/highland88999-commits/artemis-hub/main/No_humans..._Br.mp4" type="video/mp4">
-</video>
-
-<div class="header-nav">
-    <input type="text" id="browser-input" placeholder="NEURAL SEARCH OR URL ENTRY..." autocomplete="off">
-    <button onclick="neuralRandomizer()" style="background: rgba(255, 255, 255, 0.1); border: 1px solid #c0c0c0; color: #fff; cursor: pointer; padding: 0 15px;">[ RANDOM ]</button>
-</div>
-
 <div class="nexus-viewport" id="viewport"></div>
-<div class="nav-dots" id="dots"></div>
+
+<div class="nav-footer" id="dots"></div>
 
 <script>
+    // --- DATABASE ---
     const data = {
-        "INTEL": [{ name: "Wikipedia", url: "wikipedia.org" }, { name: "WolframAlpha", url: "wolframalpha.com" }, { name: "Archive.org", url: "archive.org" }, { name: "Britannica", url: "britannica.com" }, { name: "Reddit", url: "reddit.com" }],
-        "FORGE": [{ name: "GitHub", url: "github.com" }, { name: "StackOverflow", url: "stackoverflow.com" }, { name: "CodePen", url: "codepen.io" }, { name: "Replit", url: "replit.com" }, { name: "Hugging Face", url: "huggingface.co" }],
-        "SIM_I": [{ name: "YouTube", url: "youtube.com" }, { name: "Netflix", url: "netflix.com" }, { name: "Spotify", url: "googleusercontent.com/spotify.com/0" }, { name: "Twitch", url: "twitch.tv" }, { name: "IMDb", url: "imdb.com" }],
-        "EXCHANGE": [{ name: "TradingView", url: "tradingview.com" }, { name: "CoinMarketCap", url: "coinmarketcap.com" }, { name: "PayPal", url: "paypal.com" }, { name: "Amazon", url: "amazon.com" }, { name: "Binance", url: "binance.com" }],
-        "SOCIAL": [{ name: "X / Twitter", url: "x.com" }, { name: "LinkedIn", url: "linkedin.com" }, { name: "Threads", url: "threads.net" }, { name: "WhatsApp", url: "web.whatsapp.com" }, { name: "Telegram", url: "web.telegram.org" }],
-        "VOID": [{ name: "DuckDuckGo", url: "duckduckgo.com" }, { name: "Brave Search", url: "search.brave.com" }, { name: "Shodan", url: "shodan.io" }, { name: "Bing", url: "bing.com" }, { name: "Artemis Main", url: "vercel.app" }]
+        "CORE": [
+            { name: "Google", url: "google.com", icon: "🔍" },
+            { name: "YouTube", url: "youtube.com", icon: "▶️" },
+            { name: "ChatGPT", url: "chat.openai.com", icon: "🤖" },
+            { name: "Gmail", url: "mail.google.com", icon: "📧" },
+            { name: "Maps", url: "maps.google.com", icon: "🗺️" },
+            { name: "Weather", url: "weather.com", icon: "☁️" }
+        ],
+        "SOCIAL": [
+            { name: "X / Twitter", url: "x.com", icon: "❌" },
+            { name: "Reddit", url: "reddit.com", icon: "👽" },
+            { name: "Instagram", url: "instagram.com", icon: "📸" },
+            { name: "TikTok", url: "tiktok.com", icon: "🎵" },
+            { name: "LinkedIn", url: "linkedin.com", icon: "💼" },
+            { name: "Discord", url: "discord.com/app", icon: "🎮" }
+        ],
+        "MEDIA": [
+            { name: "Netflix", url: "netflix.com", icon: "🍿" },
+            { name: "Spotify", url: "open.spotify.com", icon: "🎧" },
+            { name: "Twitch", url: "twitch.tv", icon: "👾" },
+            { name: "Hulu", url: "hulu.com", icon: "📺" },
+            { name: "Apple Music", url: "music.apple.com", icon: "🎵" },
+            { name: "SoundCloud", url: "soundcloud.com", icon: "☁️" }
+        ],
+        "DEV / TECH": [
+            { name: "GitHub", url: "github.com", icon: "🐙" },
+            { name: "StackOverflow", url: "stackoverflow.com", icon: "📚" },
+            { name: "HuggingFace", url: "huggingface.co", icon: "🤗" },
+            { name: "Vercel", url: "vercel.com", icon: "▲" },
+            { name: "Figma", url: "figma.com", icon: "🎨" },
+            { name: "Replit", url: "replit.com", icon: "💻" }
+        ],
+        "FINANCE": [
+            { name: "TradingView", url: "tradingview.com", icon: "📈" },
+            { name: "CoinMarketCap", url: "coinmarketcap.com", icon: "🪙" },
+            { name: "Binance", url: "binance.com", icon: "💰" },
+            { name: "Yahoo Finance", url: "finance.yahoo.com", icon: "📰" }
+        ]
     };
 
     const viewport = document.getElementById('viewport');
     const dotsContainer = document.getElementById('dots');
 
-    /* --- UI BUILDER --- */
+    // --- RENDER UI ---
     Object.keys(data).forEach((sector, index) => {
+        // Create Page
         const page = document.createElement('div');
         page.className = 'sector-page';
-        page.innerHTML = `<div class="sector-title">${sector}</div>`;
+        
+        // Header
+        const header = document.createElement('div');
+        header.className = 'sector-header';
+        header.innerHTML = `<span class="sector-title">${sector}</span><span class="sector-count">${data[sector].length} NODES</span>`;
+        page.appendChild(header);
+
+        // Grid
         const grid = document.createElement('div');
         grid.className = 'grid';
+        
         data[sector].forEach(site => {
             const node = document.createElement('div');
             node.className = 'node';
-            node.innerHTML = `<span>${site.name}</span><small style="font-size:8px; opacity:0.5;">${site.url}</small>`;
-            node.onclick = () => transmit(site.url, site.name);
+            node.innerHTML = `
+                <div class="node-icon">${site.icon}</div>
+                <div class="node-name">${site.name}</div>
+                <div class="node-url">${site.url}</div>
+            `;
+            // CLICK HANDLER: Sends signal to Parent OS to open new frame
+            node.onclick = () => launch(site.url, site.name);
             grid.appendChild(node);
         });
+        
         page.appendChild(grid);
         viewport.appendChild(page);
 
+        // Create Dot
         const dot = document.createElement('div');
         dot.className = `dot ${index === 0 ? 'active' : ''}`;
-        dot.onclick = () => viewport.scrollTo({ left: viewport.offsetWidth * index, behavior: 'smooth' });
+        dot.onclick = () => {
+            viewport.scrollTo({ left: window.innerWidth * index, behavior: 'smooth' });
+        };
         dotsContainer.appendChild(dot);
     });
 
-    /* --- NEURAL SIGNAL LISTENERS --- */
-    window.addEventListener('message', (event) => {
-        if (event.data.type === 'ping_node') {
-            const query = event.data.query.toLowerCase();
-            document.getElementById('browser-input').value = query;
-            document.getElementById('browser-input').dispatchEvent(new Event('input'));
+    // --- INPUT HANDLER (OMNIBOX) ---
+    const input = document.getElementById('browser-input');
+    
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            let val = input.value.trim();
+            if(!val) return;
+
+            // Simple Heuristic: Is it a URL or a Search?
+            // If it has a dot and no spaces, assume URL. Otherwise, Search.
+            if (val.includes('.') && !val.includes(' ')) {
+                if (!val.startsWith('http')) val = 'https://' + val;
+                launch(val, val);
+            } else {
+                // Default to Google Search
+                const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(val)}&igu=1`;
+                launch(searchUrl, val.toUpperCase());
+            }
+            input.value = '';
+            input.blur(); // Close keyboard on mobile
         }
     });
 
-    /* --- UPDATED MULTI-TAB TRANSMIT PROTOCOL --- */
-    function transmit(url, name) {
-        let target = url.startsWith('http') ? url : `https://${url}`;
-        
-        // Force IGU mode for Google nodes/searches to prevent Header Errors
-        if (target.includes('google.com/search')) {
-            target = target.includes('igu=1') ? target : target + '&igu=1';
-        }
+    // --- LAUNCHER PROTOCOL ---
+    function launch(url, name) {
+        let target = url;
+        if (!target.startsWith('http')) target = 'https://' + target;
 
-        // Visual ping animation for the clicked node
-        const nodes = document.querySelectorAll('.node');
-        nodes.forEach(n => {
-            if(n.innerText.toUpperCase().includes(name.toUpperCase())) {
-                n.classList.add('ping');
-                setTimeout(() => n.classList.remove('ping'), 600);
-            }
-        });
-
-        // SEND TO MAIN OS SHELL (Triggers spawnFrame)
+        // Message the Parent OS (Artemis Desktop)
+        // This triggers the 'spawnFrame' function in the main OS code
         window.parent.postMessage({ 
-            type: 'load_site', 
+            type: 'spawn_frame', // Must match listener in parent
             url: target, 
-            name: name.toUpperCase() 
+            name: name 
         }, '*');
     }
 
-    /* --- SEARCH BAR LOGIC --- */
-    document.getElementById('browser-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            const val = e.target.value.trim();
-            if (val) {
-                if (val.includes('.') && !val.includes(' ')) {
-                    transmit(val, val);
-                } else {
-                    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(val)}&igu=1`;
-                    transmit(searchUrl, val);
-                }
-                e.target.value = '';
-            }
-        }
-    });
-
-    // Spectral Filter Search
-    document.getElementById('browser-input').addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase().trim();
-        document.querySelectorAll('.node').forEach(node => {
-            const match = node.innerText.toLowerCase().includes(query);
-            node.classList.toggle('spectral-out', query !== "" && !match);
+    // --- SCROLL TRACKING (UPDATE DOTS) ---
+    viewport.addEventListener('scroll', () => {
+        const scrollLeft = viewport.scrollLeft;
+        const width = window.innerWidth;
+        const index = Math.round(scrollLeft / width);
+        
+        document.querySelectorAll('.dot').forEach((d, i) => {
+            d.classList.toggle('active', i === index);
         });
     });
 
-    function neuralRandomizer() {
-        const all = Object.values(data).flat();
-        const r = all[Math.floor(Math.random() * all.length)];
-        transmit(r.url, r.name);
-    }
-
-    viewport.addEventListener('scroll', () => {
-        const index = Math.round(viewport.scrollLeft / viewport.offsetWidth);
-        document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index));
-    });
-
-    // Boot Delay
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            document.getElementById('artemis-boot').style.opacity = '0';
-            document.body.classList.add('ready');
-            document.querySelectorAll('.sector-page').forEach(s => s.classList.add('reveal'));
-            setTimeout(() => document.getElementById('artemis-boot').remove(), 1500);
-        }, 2000);
-    });
 </script>
 </body>
 </html>
