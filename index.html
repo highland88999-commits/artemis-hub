@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>ARTEMIS • NEXUS HUB 100</title>
+    <title>ARTEMIS • NEXUS HUB PRO</title>
     <style>
         :root { 
             --cyan: #00f2ff; 
@@ -13,9 +13,11 @@
             --neon-glow: 0 0 15px rgba(0, 242, 255, 0.6);
             --bloom: 0 0 20px rgba(0, 242, 255, 0.4);
         }
+        
         * { box-sizing: border-box; }
         body, html { margin: 0; padding: 0; height: 100vh; overflow: hidden; background: var(--bg); font-family: 'Courier New', monospace; color: var(--cyan); }
 
+        /* --- DYNAMIC BACKGROUND --- */
         #bg-video {
             position: fixed; inset: 0; width: 100%; height: 100%;
             z-index: -2; object-fit: cover; filter: brightness(0.4) contrast(1.1);
@@ -26,6 +28,7 @@
             z-index: -1; pointer-events: none;
         }
 
+        /* --- HEADER & NAVIGATION --- */
         .header-nav { 
             padding: 15px; border-bottom: 1px solid var(--border); 
             background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px);
@@ -37,14 +40,12 @@
             box-shadow: var(--neon-glow); text-align: center;
         }
 
-        .nexus-viewport { 
-            height: calc(100vh - 160px); display: flex; overflow-x: auto; 
-            scroll-snap-type: x mandatory; scrollbar-width: none; scroll-behavior: smooth;
-        }
+        /* --- GRID VIEWPORT --- */
+        .nexus-viewport { height: calc(100vh - 140px); display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
         .nexus-viewport::-webkit-scrollbar { display: none; }
-
         .sector-page { min-width: 100%; height: 100%; padding: 40px; scroll-snap-align: start; overflow-y: auto; }
         .sector-title { font-size: 1.5rem; letter-spacing: 5px; margin-bottom: 20px; text-shadow: var(--bloom); color: #fff; }
+        
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; }
         .node { 
             background: rgba(0, 0, 0, 0.6); border: 1px solid var(--border); padding: 15px; 
@@ -52,179 +53,174 @@
         }
         .node:hover { background: var(--cyan); color: #000; box-shadow: var(--neon-glow); transform: scale(1.05); }
 
+        /* --- HOLOFRAME WINDOWS --- */
         #window-manager { position: fixed; inset: 0; pointer-events: none; z-index: 2000; }
         .holoframe {
-            position: absolute; top: 10%; left: 10%; width: 80%; height: 75%;
+            position: absolute; inset: 0; margin: auto; width: 95%; height: 85%;
             background: var(--glass); border: 2px solid var(--cyan);
-            backdrop-filter: blur(25px); border-radius: 8px;
-            box-shadow: 0 0 50px rgba(0, 242, 255, 0.2);
+            backdrop-filter: blur(35px); border-radius: 12px;
+            box-shadow: 0 0 60px rgba(0, 242, 255, 0.25);
             display: flex; flex-direction: column; pointer-events: auto;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.4s;
+            transform-origin: bottom center;
         }
-        .holoframe.minimized { transform: scale(0.3) translate(80vw, 80vh); opacity: 0.6; pointer-events: none; }
+        
+        .holoframe.minimized { transform: translateY(110vh) scale(0.5); opacity: 0; pointer-events: none; }
         
         .holo-header {
-            padding: 10px 15px; background: rgba(0, 242, 255, 0.1);
+            padding: 12px 20px; background: rgba(0, 242, 255, 0.1);
             border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;
-            align-items: center; cursor: move; font-weight: bold; font-size: 12px;
+            align-items: center; font-weight: bold; font-size: 13px; letter-spacing: 2px;
         }
-        .holo-controls { display: flex; gap: 12px; }
-        .ctrl-btn { cursor: pointer; padding: 2px 8px; border: 1px solid var(--border); border-radius: 3px; }
-        .ctrl-btn:hover { background: var(--cyan); color: #000; }
         
-        .holo-body { flex: 1; background: #000; position: relative; }
+        .holo-controls { display: flex; gap: 15px; }
+        .ctrl-btn { cursor: pointer; font-family: monospace; transition: 0.2s; }
+        .ctrl-btn:hover { color: #fff; text-shadow: var(--bloom); }
+
+        .holo-body { flex: 1; background: #000; position: relative; border-radius: 0 0 10px 10px; overflow: hidden; }
         iframe { width: 100%; height: 100%; border: none; background: #000; }
 
+        /* --- THREAD DOCK --- */
         .thread-dock {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 60px;
-            background: rgba(0, 0, 0, 0.9); border-top: 1px solid var(--border);
-            display: flex; align-items: center; padding: 0 20px; gap: 10px;
-            overflow-x: auto; z-index: 3000; backdrop-filter: blur(15px);
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
+            background: rgba(0, 0, 0, 0.95); border-top: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            padding: 0 30px; gap: 12px; z-index: 3000; backdrop-filter: blur(20px);
+            overflow-x: auto; scrollbar-width: none;
         }
+        
         .dock-tab {
-            padding: 8px 15px; background: rgba(0, 242, 255, 0.1);
-            border: 1px solid var(--border); border-radius: 4px;
-            font-size: 10px; cursor: pointer; white-space: nowrap; transition: 0.3s;
+            min-width: 140px; padding: 10px 15px; 
+            background: rgba(0, 242, 255, 0.05); border: 1px solid var(--border);
+            border-radius: 4px; font-size: 10px; cursor: pointer; 
+            white-space: nowrap; transition: 0.3s; text-align: center;
+            color: var(--cyan); letter-spacing: 1px;
         }
-        .dock-tab:hover { background: rgba(0, 242, 255, 0.3); }
-        .dock-tab.active { border-color: #fff; box-shadow: var(--bloom); background: var(--cyan); color: #000; }
+        
+        .dock-tab:hover { background: rgba(0, 242, 255, 0.2); border-color: var(--cyan); }
+        .dock-tab.active { background: var(--cyan); color: #000; font-weight: bold; box-shadow: var(--neon-glow); }
+        
+        /* Nav Dots for Main Grid */
+        .nav-dots { display: flex; justify-content: center; gap: 10px; padding: 10px; position: fixed; bottom: 80px; width: 100%; }
+        .dot { width: 25px; height: 3px; background: rgba(0,242,255,0.2); cursor: pointer; transition: 0.3s; }
+        .dot.active { background: var(--cyan); width: 50px; box-shadow: var(--neon-glow); }
 
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 3px; }
+        ::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
 
 <video id="bg-video" autoplay loop muted playsinline>
-    <source src="https://raw.githubusercontent.com/highland88999-commits/artemis-hub/main/No_humans_pleas%20(1).mp4" type="video/mp4">
+    <source src="https://raw.githubusercontent.com/highland88999-commits/artemis-hub/main/No_humans..._Br.mp4" type="video/mp4">
 </video>
 
 <div class="header-nav">
-    <input type="text" id="browser-input" placeholder="EXECUTE NEURAL COMMAND (URL OR SEARCH)...">
-    <button class="ctrl-btn" onclick="neuralRandomizer()">RANDOM</button>
+    <input type="text" id="browser-input" placeholder="NEURAL COMMAND: ENTER URL OR SEARCH..." autocomplete="off">
+    <button class="node" style="padding: 5px 20px; min-height: auto;" onclick="neuralRandomizer()">[ RANDOM ]</button>
 </div>
 
 <div class="nexus-viewport" id="viewport"></div>
+<div class="nav-dots" id="dots"></div>
 
 <div id="window-manager"></div>
 
-<div class="thread-dock" id="thread-dock"></div>
+<div class="thread-dock" id="thread-dock">
+    </div>
 
 <script>
     const PROXY = "https://artemis-proxy.onrender.com/";
     const viewport = document.getElementById('viewport');
     const windowManager = document.getElementById('window-manager');
     const threadDock = document.getElementById('thread-dock');
-    
-    let activeThreads = [];
-    let zIndexCounter = 2000;
+    const dotsContainer = document.getElementById('dots');
 
-    // Full 100-site data (abbreviated here – paste your complete object)
+    let threads = [];
+    let activeThreadId = null;
+
     const data = {
-        "INTEL": [
-            { name: "Wikipedia", url: "wikipedia.org" }, { name: "WolframAlpha", url: "wolframalpha.com" },
-            { name: "Archive.org", url: "archive.org" }, { name: "Britannica", url: "britannica.com" },
-            // ... add all your sites
-        ],
-        // ... rest of categories
+        "INTEL": [{ name: "Wikipedia", url: "wikipedia.org" }, { name: "WolframAlpha", url: "wolframalpha.com" }, { name: "Archive.org", url: "archive.org" }, { name: "Reddit", url: "reddit.com" }],
+        "FORGE": [{ name: "GitHub", url: "github.com" }, { name: "StackOverflow", url: "stackoverflow.com" }, { name: "Replit", url: "replit.com" }, { name: "Vercel", url: "vercel.com" }],
+        "SOCIAL": [{ name: "X / Twitter", url: "x.com" }, { name: "Discord", url: "discord.com" }, { name: "Threads", url: "threads.net" }],
+        "VOID": [{ name: "DuckDuckGo", url: "duckduckgo.com" }, { name: "Shodan", url: "shodan.io" }, { name: "Brave", url: "search.brave.com" }]
     };
 
-    function transmit(url, name) {
-        let target = url.startsWith('http') ? url : `https://${url}`;
-        if (target.includes("google.com")) {
-            target += (target.includes('?') ? '&' : '?') + 'igu=1';
-        }
-        spawnWindow(PROXY + target, name);
-    }
-
-    function spawnWindow(url, name) {
+    function spawnHoloframe(url, name) {
         const id = 'thread-' + Date.now();
-        const winMarkup = `
-            <div class="holoframe" id="${id}" style="z-index: ${++zIndexCounter}">
+        let target = url.startsWith('http') ? url : `https://${url}`;
+        
+        // Proxy Injection
+        const proxied = PROXY + target + (target.includes('?') ? '&igu=1' : '?igu=1');
+
+        const frameMarkup = `
+            <div class="holoframe" id="${id}">
                 <div class="holo-header">
                     <span>${name.toUpperCase()}</span>
                     <div class="holo-controls">
-                        <span class="ctrl-btn" onclick="toggleMinimize('${id}')">[_]</span>
-                        <span class="ctrl-btn" onclick="closeThread('${id}')" style="color: #ff3366;">[X]</span>
+                        <span class="ctrl-btn" onclick="minimizeThread('${id}')">[_]</span>
+                        <span class="ctrl-btn" onclick="closeThread('${id}')" style="color:#ff3366">[X]</span>
                     </div>
                 </div>
                 <div class="holo-body">
-                    <iframe src="${url}" onerror="this.srcdoc='<body style=\'margin:0;padding:40px;background:#000;color:#ff3366;font-family:monospace;text-align:center;\'><h2>ACCESS DENIED</h2><p>Proxy or site blocked.</p></body>'"></iframe>
+                    <iframe src="${proxied}"></iframe>
                 </div>
             </div>`;
-        
-        windowManager.insertAdjacentHTML('beforeend', winMarkup);
-        
-        const threadObj = { id, name: name.toUpperCase() };
-        activeThreads.push(threadObj);
-        updateDock();
-        makeDraggable(document.getElementById(id));
+
+        windowManager.insertAdjacentHTML('beforeend', frameMarkup);
+        threads.push({ id, name: name.toUpperCase() });
+        focusThread(id);
     }
 
-    function toggleMinimize(id) {
-        const win = document.getElementById(id);
-        win.classList.toggle('minimized');
-        if (!win.classList.contains('minimized')) {
-            win.style.zIndex = ++zIndexCounter;
-        }
-        updateDock();
+    function focusThread(id) {
+        threads.forEach(t => {
+            const el = document.getElementById(t.id);
+            if (t.id === id) {
+                el.classList.remove('minimized');
+                el.style.zIndex = 2500;
+                activeThreadId = id;
+            } else {
+                el.style.zIndex = 2000;
+            }
+        });
+        renderDock();
+    }
+
+    function minimizeThread(id) {
+        document.getElementById(id).classList.add('minimized');
+        activeThreadId = null;
+        renderDock();
     }
 
     function closeThread(id) {
         document.getElementById(id).remove();
-        activeThreads = activeThreads.filter(t => t.id !== id);
-        updateDock();
+        threads = threads.filter(t => t.id !== id);
+        if (activeThreadId === id) activeThreadId = null;
+        renderDock();
     }
 
-    function updateDock() {
+    function renderDock() {
         threadDock.innerHTML = '';
-        activeThreads.forEach(t => {
-            const win = document.getElementById(t.id);
-            const isMinimized = win.classList.contains('minimized');
+        if (threads.length === 0) {
+            threadDock.style.display = 'none';
+            return;
+        }
+        threadDock.style.display = 'flex';
+
+        threads.forEach(t => {
             const tab = document.createElement('div');
-            tab.className = `dock-tab ${!isMinimized ? 'active' : ''}`;
+            tab.className = `dock-tab ${activeThreadId === t.id ? 'active' : ''}`;
             tab.innerText = t.name;
-            tab.onclick = () => {
-                if (isMinimized) toggleMinimize(t.id);
-                else win.style.zIndex = ++zIndexCounter;
-                updateDock();
-            };
+            tab.onclick = () => focusThread(t.id);
             threadDock.appendChild(tab);
         });
     }
 
-    function makeDraggable(el) {
-        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-        const header = el.querySelector(".holo-header");
-        header.onmousedown = dragMouseDown;
-
-        function dragMouseDown(e) {
-            el.style.zIndex = ++zIndexCounter;
-            updateDock();
-            e.preventDefault();
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            document.onmouseup = closeDragElement;
-            document.onmousemove = elementDrag;
-        }
-
-        function elementDrag(e) {
-            e.preventDefault();
-            pos1 = pos3 - e.clientX;
-            pos2 = pos4 - e.clientY;
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            el.style.top = (el.offsetTop - pos2) + "px";
-            el.style.left = (el.offsetLeft - pos1) + "px";
-        }
-
-        function closeDragElement() {
-            document.onmouseup = null;
-            document.onmousemove = null;
-        }
+    function neuralRandomizer() {
+        const all = Object.values(data).flat();
+        const site = all[Math.floor(Math.random() * all.length)];
+        spawnHoloframe(site.url, site.name);
     }
 
-    // Initialize sectors
+    // Grid Initialization
     Object.keys(data).forEach((sector, index) => {
         const page = document.createElement('div');
         page.className = 'sector-page';
@@ -235,17 +231,16 @@
             const node = document.createElement('div');
             node.className = 'node';
             node.innerHTML = `<span>${site.name}</span><small>${site.url}</small>`;
-            node.onclick = () => transmit(site.url, site.name);
+            node.onclick = () => spawnHoloframe(site.url, site.name);
             grid.appendChild(node);
         });
         page.appendChild(grid);
         viewport.appendChild(page);
 
-        // Dots
         const dot = document.createElement('div');
         dot.className = `dot ${index === 0 ? 'active' : ''}`;
         dot.onclick = () => viewport.scrollTo({ left: viewport.offsetWidth * index, behavior: 'smooth' });
-        document.getElementById('dots').appendChild(dot);  // Add <div id="dots" class="nav-dots"></div> in HTML if missing
+        dotsContainer.appendChild(dot);
     });
 
     viewport.addEventListener('scroll', () => {
@@ -257,18 +252,14 @@
         if (e.key === 'Enter') {
             const val = e.target.value.trim();
             if (val) {
-                if (val.includes('.') && !val.includes(' ')) transmit(val, val);
-                else transmit(`https://www.google.com/search?q=${encodeURIComponent(val)}`, "SEARCH");
+                if (val.includes('.') && !val.includes(' ')) spawnHoloframe(val, val);
+                else spawnHoloframe(`https://www.google.com/search?q=${encodeURIComponent(val)}`, "SEARCH");
                 e.target.value = '';
             }
         }
     });
 
-    function neuralRandomizer() {
-        const allSites = Object.values(data).flat();
-        const res = allSites[Math.floor(Math.random() * allSites.length)];
-        transmit(res.url, res.name);
-    }
+    renderDock();
 </script>
 </body>
 </html>
