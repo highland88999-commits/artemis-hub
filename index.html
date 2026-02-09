@@ -3,115 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARTEMIS • HUB</title>
+    <title>ARTEMIS • NEXUS HUB</title>
     <style>
-        :root { --cyan: #00f2ff; --bg: #000; }
+        :root { --cyan: #00f2ff; --bg: #000; --glass: rgba(0, 242, 255, 0.05); }
         * { box-sizing: border-box; }
         body { 
             background: var(--bg); color: var(--cyan); 
-            font-family: 'Courier New', monospace; 
-            margin: 0; padding: 20px; overflow-x: hidden;
+            font-family: 'Courier New', monospace; margin: 0; 
+            overflow: hidden; height: 100vh; display: flex; flex-direction: column;
         }
-        
-        .search-wrap { 
-            position: sticky; top: 0; background: #000; 
-            padding: 15px 0; z-index: 10; 
-            border-bottom: 1px solid rgba(0, 242, 255, 0.4); 
-        }
-        #browser-input {
-            width: 100%; background: rgba(0, 242, 255, 0.05); 
-            border: 1px solid var(--cyan); padding: 15px; 
-            color: var(--cyan); font-size: 1.1rem; outline: none;
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
-            transition: 0.3s;
-        }
-        #browser-input:focus { box-shadow: 0 0 25px var(--cyan); background: rgba(0,242,255,0.1); }
 
+        /* Search Section */
+        .header-nav { padding: 20px; border-bottom: 1px solid rgba(0, 242, 255, 0.3); }
+        #browser-input {
+            width: 100%; background: var(--glass); border: 1px solid var(--cyan);
+            padding: 15px; color: var(--cyan); font-size: 1rem; outline: none;
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
+        }
+
+        /* The Slidable Container */
+        .nexus-viewport {
+            flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+            scrollbar-width: none; scroll-behavior: smooth;
+        }
+        .nexus-viewport::-webkit-scrollbar { display: none; }
+
+        .sector-page {
+            min-width: 100%; height: 100%; padding: 20px;
+            scroll-snap-align: start; display: flex; flex-direction: column;
+        }
+
+        .sector-title { 
+            font-size: 1.5rem; letter-spacing: 5px; margin-bottom: 20px; 
+            border-left: 4px solid var(--cyan); padding-left: 15px;
+        }
+
+        /* Grid Layout */
         .grid { 
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-            gap: 15px; margin-top: 20px; 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
+            gap: 15px; overflow-y: auto; padding-bottom: 40px;
         }
         .node {
-            background: rgba(0, 242, 255, 0.05); border: 1px solid rgba(0, 242, 255, 0.2);
-            padding: 15px; text-align: center; cursor: pointer; 
-            transition: 0.3s ease; position: relative;
+            background: var(--glass); border: 1px solid rgba(0, 242, 255, 0.2);
+            padding: 15px; text-align: center; cursor: pointer; transition: 0.3s;
         }
-        .node:hover { 
-            background: var(--cyan); color: #000; 
-            box-shadow: 0 0 20px var(--cyan); transform: translateY(-2px); 
+        .node:hover { background: var(--cyan); color: #000; box-shadow: 0 0 20px var(--cyan); }
+        .node span { display: block; font-size: 0.75rem; font-weight: bold; }
+        .node small { font-size: 0.5rem; opacity: 0.6; display: block; margin-top: 5px; }
+
+        /* Pagination Indicators */
+        .nav-dots {
+            display: flex; justify-content: center; gap: 10px; padding: 15px;
+            background: rgba(0,0,0,0.8);
         }
-        .node span { display: block; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; }
-        .node small { font-size: 0.55rem; opacity: 0.6; display: block; margin-top: 5px; }
+        .dot { width: 10px; height: 10px; border: 1px solid var(--cyan); cursor: pointer; }
+        .dot.active { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
     </style>
 </head>
 <body>
 
-<div class="search-wrap">
-    <input type="text" id="browser-input" placeholder="ENTER TARGET DOMAIN OR QUERY ARCHIVES..." autocomplete="off">
+<div class="header-nav">
+    <input type="text" id="browser-input" placeholder="SEARCH ARCHIVES OR ENTER URL..." autocomplete="off">
 </div>
 
-<div id="node-grid" class="grid"></div>
+<div class="nexus-viewport" id="viewport">
+    </div>
+
+<div class="nav-dots" id="dots"></div>
 
 <script>
     const PROXY = "https://artemis-proxy.onrender.com/";
     
-    const sites = [
-        { name: "Wikipedia", url: "https://en.wikipedia.org" },
-        { name: "YouTube", url: "https://www.youtube.com" },
-        { name: "GitHub", url: "https://github.com" },
-        { name: "Windy", url: "https://www.windy.com" },
-        { name: "TradingView", url: "https://www.tradingview.com" },
-        { name: "NASA", url: "https://www.nasa.gov" },
-        { name: "Reddit", url: "https://www.reddit.com" },
-        { name: "DuckDuckGo", url: "https://duckduckgo.com" },
-        { name: "Archive.org", url: "https://archive.org" },
-        { name: "WolframAlpha", url: "https://www.wolframalpha.com" },
-        { name: "DevDocs", url: "https://devdocs.io" },
-        { name: "CodePen", url: "https://codepen.io" },
-        { name: "Hacker News", url: "https://news.ycombinator.com" },
-        { name: "VirusTotal", url: "https://www.virustotal.com" },
-        { name: "DeepL", url: "https://www.deepl.com" },
-        { name: "ArXiv", url: "https://arxiv.org" },
-        { name: "Pinterest", url: "https://www.pinterest.com" },
-        { name: "StackOverflow", url: "https://stackoverflow.com" },
-        { name: "Figma", url: "https://www.figma.com" },
-        { name: "Canva", url: "https://www.canva.com" }
-        // (Add more from previous list as desired)
-    ];
+    const data = {
+        "INTEL": [
+            { name: "Wikipedia", url: "https://en.wikipedia.org" },
+            { name: "WolframAlpha", url: "https://www.wolframalpha.com" },
+            { name: "Archive.org", url: "https://archive.org" },
+            { name: "Britannica", url: "https://www.britannica.com" },
+            { name: "Reddit", url: "https://www.reddit.com" },
+            { name: "Quora", url: "https://www.quora.com" },
+            { name: "ArXiv", url: "https://arxiv.org" },
+            { name: "WikiHow", url: "https://www.wikihow.com" },
+            { name: "Gutenberg", url: "https://www.gutenberg.org" },
+            { name: "Investopedia", url: "https://www.investopedia.com" }
+        ],
+        "FORGE": [
+            { name: "GitHub", url: "https://github.com" },
+            { name: "StackOverflow", url: "https://stackoverflow.com" },
+            { name: "CodePen", url: "https://codepen.io" },
+            { name: "Figma", url: "https://www.figma.com" },
+            { name: "Canva", url: "https://www.canva.com" },
+            { name: "Replit", url: "https://replit.com" },
+            { name: "DevDocs", url: "https://devdocs.io" },
+            { name: "Hugging Face", url: "https://huggingface.co" },
+            { name: "Vercel", url: "https://vercel.com" },
+            { name: "Dribbble", url: "https://dribbble.com" }
+        ],
+        "EXCHANGE": [
+            { name: "TradingView", url: "https://www.tradingview.com" },
+            { name: "CoinMarketCap", url: "https://coinmarketcap.com" },
+            { name: "PayPal", url: "https://www.paypal.com" },
+            { name: "Coinbase", url: "https://www.coinbase.com" },
+            { name: "Amazon", url: "https://www.amazon.com" },
+            { name: "eBay", url: "https://www.ebay.com" },
+            { name: "Shopify", url: "https://www.shopify.com" },
+            { name: "Etsy", url: "https://www.etsy.com" },
+            { name: "Robinhood", url: "https://www.robinhood.com" },
+            { name: "Mint", url: "https://mint.intuit.com" }
+        ],
+        "SIM": [
+            { name: "YouTube", url: "https://www.youtube.com" },
+            { name: "Netflix", url: "https://www.netflix.com" },
+            { name: "Spotify", url: "https://open.spotify.com" },
+            { name: "Twitch", url: "https://www.twitch.tv" },
+            { name: "IMDb", url: "https://www.imdb.com" },
+            { name: "SoundCloud", url: "https://soundcloud.com" },
+            { name: "Steam", url: "https://store.steampowered.com" },
+            { name: "Vimeo", url: "https://vimeo.com" },
+            { name: "Letterboxd", url: "https://letterboxd.com" },
+            { name: "Metacritic", url: "https://www.metacritic.com" }
+        ]
+        // Add more sectors (HABITAT, BLACKOPS, etc.) to reach 100
+    };
 
-    function transmit(url, name = "NODE") {
+    const viewport = document.getElementById('viewport');
+    const dotsContainer = document.getElementById('dots');
+
+    function transmit(url, name) {
         let target = url.startsWith('http') ? url : `https://${url}`;
-        window.parent.postMessage({ 
-            type: 'load_site', 
-            url: PROXY + target,
-            name: name.toUpperCase()
-        }, '*');
+        window.parent.postMessage({ type: 'load_site', url: PROXY + target, name: name.toUpperCase() }, '*');
     }
 
-    const grid = document.getElementById('node-grid');
-    const input = document.getElementById('browser-input');
-
-    function render(filter = "") {
-        grid.innerHTML = "";
-        sites.filter(s => s.name.toLowerCase().includes(filter.toLowerCase())).forEach(site => {
-            const div = document.createElement('div');
-            div.className = 'node';
-            div.innerHTML = `<span>${site.name}</span><small>${site.url.replace('https://','')}</small>`;
-            div.onclick = () => transmit(site.url, site.name);
-            grid.appendChild(div);
+    // Build the sliding interface
+    Object.keys(data).forEach((sector, index) => {
+        const page = document.createElement('div');
+        page.className = 'sector-page';
+        page.innerHTML = `<div class="sector-title">${sector} SECTOR</div>`;
+        
+        const grid = document.createElement('div');
+        grid.className = 'grid';
+        
+        data[sector].forEach(site => {
+            const node = document.createElement('div');
+            node.className = 'node';
+            node.innerHTML = `<span>${site.name}</span><small>${site.url.replace('https://','')}</small>`;
+            node.onclick = () => transmit(site.url, site.name);
+            grid.appendChild(node);
         });
-    }
+        
+        page.appendChild(grid);
+        viewport.appendChild(page);
 
-    input.addEventListener('keypress', (e) => {
+        // Add dot
+        const dot = document.createElement('div');
+        dot.className = `dot ${index === 0 ? 'active' : ''}`;
+        dot.onclick = () => viewport.scrollTo({ left: window.innerWidth * index });
+        dotsContainer.appendChild(dot);
+    });
+
+    // Update active dot on scroll
+    viewport.addEventListener('scroll', () => {
+        const index = Math.round(viewport.scrollLeft / window.innerWidth);
+        document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index));
+    });
+
+    // Search functionality
+    document.getElementById('browser-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
-            const val = input.value;
+            const val = e.target.value;
             if (val.includes('.') && !val.includes(' ')) transmit(val, val);
             else transmit(`https://duckduckgo.com/?q=${encodeURIComponent(val)}`, "SEARCH");
         }
     });
-
-    input.addEventListener('input', (e) => render(e.target.value));
-    render();
 </script>
 </body>
 </html>
