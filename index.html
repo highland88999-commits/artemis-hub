@@ -1,91 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>ARTEMIS • NEURAL OS</title>
     <style>
-        :root { --cyan: #00f2ff; --gold: #d4af37; }
-        body, html { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; font-family: monospace; }
+        :root { --cyan: #00f2ff; --bg: #000; }
+        body { background: var(--bg); color: var(--cyan); font-family: 'Courier New', monospace; padding: 20px; margin: 0; }
         
-        /* Background Loop */
-        #bg-video {
-            position: fixed; inset: 0; width: 100%; height: 100%;
-            object-fit: cover; z-index: -1; filter: brightness(0.3) contrast(1.2);
+        .search-wrap { position: sticky; top: 0; background: #000; padding: 15px 0; z-index: 10; border-bottom: 1px solid rgba(0, 242, 255, 0.4); }
+        #browser-input {
+            width: 100%; background: rgba(0, 242, 255, 0.05); border: 1px solid var(--cyan);
+            padding: 15px; color: var(--cyan); font-size: 1.1rem; outline: none;
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
         }
 
-        /* Holoframe Styling */
-        #holo-overlay {
-            position: fixed; inset: 4%; display: flex; flex-direction: column;
-            border: 2px solid var(--cyan); border-radius: 12px;
-            background: rgba(0, 15, 25, 0.7); backdrop-filter: blur(15px);
-            box-shadow: 0 0 40px rgba(0, 242, 255, 0.3), inset 0 0 20px rgba(0, 242, 255, 0.1);
-            z-index: 1000; transition: transform 0.5s ease;
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; margin-top: 20px; }
+        .node {
+            background: rgba(0, 242, 255, 0.05); border: 1px solid rgba(0, 242, 255, 0.2);
+            padding: 15px; text-align: center; cursor: pointer; transition: 0.3s ease; position: relative;
         }
-
-        .holo-header {
-            padding: 12px 20px; background: rgba(0, 242, 255, 0.1);
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--cyan); letter-spacing: 2px;
-        }
-
-        .iframe-wrapper { position: relative; flex: 1; overflow: hidden; }
-
-        #holo-iframe {
-            width: 100%; height: 100%; border: none;
-            filter: saturate(1.2) brightness(1.1); /* Neon Bloom */
-        }
-
-        /* Transition Video Overlay */
-        #transition-overlay {
-            position: absolute; inset: 0; z-index: 2000;
-            background: #000; display: none; justify-content: center; align-items: center;
-        }
-        #transition-video { width: 100%; height: 100%; object-fit: cover; }
+        .node:hover { background: var(--cyan); color: #000; box-shadow: 0 0 20px var(--cyan); transform: translateY(-2px); }
+        .node span { display: block; font-size: 0.8rem; font-weight: bold; }
+        .node small { font-size: 0.55rem; opacity: 0.6; }
     </style>
 </head>
 <body>
 
-<video id="bg-video" autoplay loop muted playsinline>
-    <source src="https://raw.githubusercontent.com/highland88999-commits/artemis-hub/main/No_humans_pleas%20(1).mp4" type="video/mp4">
-</video>
-
-<div id="holo-overlay">
-    <div class="holo-header">
-        <span id="holo-title">NEXUS STATUS: READY</span>
-        <div style="cursor:pointer; color:#ff3366; font-weight:bold;">× TERMINATE</div>
-    </div>
-    <div class="iframe-wrapper">
-        <div id="transition-overlay">
-            <video id="transition-video" loop muted playsinline>
-                <source src="https://raw.githubusercontent.com/highland88999-commits/artemis-hub/main/VID_20260208225522.mp4" type="video/mp4">
-            </video>
-        </div>
-        <iframe id="holo-iframe" src="https://YOUR-HUB-URL.onrender.com" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
-    </div>
+<div class="search-wrap">
+    <input type="text" id="browser-input" placeholder="ENTER TARGET DOMAIN OR QUERY ARCHIVES..." autocomplete="off">
 </div>
 
+<div class="grid" id="node-grid"></div>
+
 <script>
-    window.addEventListener('message', (event) => {
-        if (event.data.type === 'load_site') {
-            const iframe = document.getElementById('holo-iframe');
-            const transition = document.getElementById('transition-overlay');
-            const transVideo = document.getElementById('transition-video');
+    const PROXY = "https://artemis-proxy.onrender.com/";
+    
+    // Master Node Array
+    const sites = [
+        { name: "Wikipedia", url: "https://en.wikipedia.org" },
+        { name: "YouTube", url: "https://www.youtube.com" },
+        { name: "GitHub", url: "https://github.com" },
+        { name: "Windy", url: "https://www.windy.com" },
+        { name: "TradingView", url: "https://www.tradingview.com" },
+        { name: "NASA", url: "https://www.nasa.gov" },
+        { name: "Reddit", url: "https://www.reddit.com" },
+        { name: "DuckDuckGo", url: "https://duckduckgo.com" },
+        { name: "Archive.org", url: "https://archive.org" },
+        { name: "WolframAlpha", url: "https://www.wolframalpha.com" },
+        { name: "DevDocs", url: "https://devdocs.io" },
+        { name: "CodePen", url: "https://codepen.io" },
+        { name: "Hacker News", url: "https://news.ycombinator.com" },
+        { name: "VirusTotal", url: "https://www.virustotal.com" },
+        { name: "DeepL", url: "https://www.deepl.com" }
+        // ... (Include the full list of 100 here)
+    ];
 
-            transition.style.display = 'flex';
-            transVideo.play();
-            
-            iframe.src = event.data.url;
-            document.getElementById('holo-title').textContent = "COMMUNING WITH NODE...";
+    function transmit(url, name = "EXTERNAL_NODE") {
+        let target = url.startsWith('http') ? url : `https://${url}`;
+        // Communicating the Proxy-wrapped URL to the Parent OS
+        window.parent.postMessage({ 
+            type: 'load_site', 
+            url: PROXY + target,
+            name: name.toUpperCase()
+        }, '*');
+    }
 
-            iframe.onload = () => {
-                setTimeout(() => {
-                    transition.style.display = 'none';
-                    transVideo.pause();
-                    document.getElementById('holo-title').textContent = "LINK ESTABLISHED";
-                }, 800);
-            };
+    const grid = document.getElementById('node-grid');
+    const input = document.getElementById('browser-input');
+
+    function render(filter = "") {
+        grid.innerHTML = "";
+        sites.filter(s => s.name.toLowerCase().includes(filter.toLowerCase())).forEach(site => {
+            const div = document.createElement('div');
+            div.className = 'node';
+            div.innerHTML = `<span>${site.name}</span><small>${site.url.replace('https://','')}</small>`;
+            div.onclick = () => transmit(site.url, site.name);
+            grid.appendChild(div);
+        });
+    }
+
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            const val = input.value;
+            // If it's a domain, visit it. Otherwise, search it.
+            if (val.includes('.') && !val.includes(' ')) transmit(val, val);
+            else transmit(`https://duckduckgo.com/?q=${encodeURIComponent(val)}`, "SEARCH");
         }
     });
+
+    input.addEventListener('input', (e) => render(e.target.value));
+    render();
 </script>
 </body>
 </html>
