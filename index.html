@@ -10,7 +10,6 @@
             --bg: #000; 
             --glass: rgba(0, 242, 255, 0.08); 
             --silver: #c0c0c0; 
-            --silver-bloom: rgba(255, 255, 255, 0.25);
             --neon-glow: 0 0 15px rgba(0, 242, 255, 0.6);
         }
         
@@ -41,73 +40,49 @@
         .boot-status { font-size: 0.7rem; color: #fff; opacity: 0.6; text-transform: uppercase; margin-bottom: 10px; min-height: 15px; }
         .boot-bar-container { width: 100%; height: 2px; background: rgba(0, 242, 255, 0.1); position: relative; overflow: hidden; }
         .boot-bar-fill { position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); transition: width 0.3s; }
-        @keyframes text-flicker { 0% { opacity: 0.8; } 100% { opacity: 1; } }
 
-        /* --- CINEMATIC BACKGROUND --- */
+        /* --- BACKGROUND & VIEWPORT --- */
         #bg-video {
             position: fixed; top: 50%; left: 50%; min-width: 100%; min-height: 100%;
             transform: translate(-50%, -50%); z-index: -2; object-fit: cover;
-            filter: brightness(0.5) contrast(1.1);
+            filter: brightness(0.4) contrast(1.1);
         }
-        body::after {
-            content: ""; position: fixed; inset: 0;
-            background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.8) 100%);
-            z-index: -1; pointer-events: none;
-        }
-
-        /* --- VIEWPORT & ENTRANCE --- */
         .nexus-viewport { 
             flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; 
             scrollbar-width: none; scroll-behavior: smooth;
-            filter: blur(20px) brightness(0); transform: scale(1.1);
-            transition: 2s cubic-bezier(0.19, 1, 0.22, 1);
+            filter: blur(20px) brightness(0); transition: 2s cubic-bezier(0.19, 1, 0.22, 1);
         }
-        body.ready .nexus-viewport { filter: blur(0) brightness(1); transform: scale(1); }
-        .nexus-viewport::-webkit-scrollbar { display: none; }
-        
+        body.ready .nexus-viewport { filter: blur(0) brightness(1); }
+
         .sector-page { 
             min-width: 100%; height: 100%; padding: 25px; scroll-snap-align: start; 
-            display: flex; flex-direction: column;
-            opacity: 0; transform: translateX(-30px) perspective(1000px) rotateY(-5deg);
-            transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+            display: flex; flex-direction: column; opacity: 0; transition: all 0.8s;
         }
-        .sector-page.reveal { opacity: 1; transform: translateX(0) rotateY(0deg); }
+        .sector-page.reveal { opacity: 1; }
+        .sector-title { font-size: 1.8rem; letter-spacing: 8px; margin-bottom: 25px; border-left: 5px solid var(--cyan); padding-left: 15px; text-shadow: var(--neon-glow); color: #fff; }
 
-        .sector-title { 
-            font-size: 1.8rem; letter-spacing: 8px; margin-bottom: 25px; 
-            border-left: 5px solid var(--cyan); padding-left: 15px; 
-            text-shadow: 0 0 15px var(--cyan); color: #fff;
-        }
-
-        /* --- NODES & SPECTRAL FILTERING --- */
+        /* --- GRID & NODES --- */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 12px; overflow-y: auto; padding-bottom: 50px; }
-        
         .node { 
             background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(0, 242, 255, 0.2); 
-            padding: 15px; text-align: center; cursor: pointer; 
-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            border-radius: 4px; display: flex; flex-direction: column; 
-            justify-content: center; min-height: 85px; backdrop-filter: blur(8px);
-            opacity: 0; transform: translateY(10px); position: relative;
+            padding: 15px; text-align: center; cursor: pointer; transition: 0.3s; 
+            border-radius: 4px; display: flex; flex-direction: column; justify-content: center;
+            min-height: 85px; backdrop-filter: blur(8px); position: relative;
         }
-        .sector-page.reveal .node { opacity: 1; transform: translateY(0); }
+        .node:hover { background: var(--cyan); color: #000; box-shadow: 0 0 25px var(--cyan); transform: translateY(-3px); }
+        .node.spectral-out { opacity: 0.1; filter: grayscale(1); pointer-events: none; }
 
-        .node:hover { background: var(--cyan); color: #000; box-shadow: 0 0 25px var(--cyan); transform: translateY(-5px); border-color: #fff; }
-
-        /* Target Lock Animation on Search Match */
+        /* Target Lock Animation */
         .node.ping::after {
             content: ""; position: absolute; inset: -5px; border: 1px solid var(--cyan);
             animation: target-lock 0.6s ease-out forwards;
         }
-        @keyframes target-lock { 0% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+        @keyframes target-lock { 0% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
 
-        .node.spectral-out { opacity: 0.1; filter: blur(2px) grayscale(1); transform: scale(0.9); pointer-events: none; }
-        .sector-page.spectral-hide { opacity: 0.3; filter: saturate(0); }
-
-        /* --- REST OF UI --- */
+        /* --- UI COMPONENTS --- */
         .header-nav { padding: 15px; border-bottom: 1px solid rgba(0, 242, 255, 0.3); background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); z-index: 10; display: flex; gap: 10px; }
         #browser-input { flex: 1; background: rgba(0, 0, 0, 0.5); border: 1px solid var(--cyan); padding: 12px; color: var(--cyan); font-size: 1rem; outline: none; text-align: center; box-shadow: var(--neon-glow); }
-        .nav-dots { display: flex; justify-content: center; gap: 10px; padding: 20px; background: rgba(0, 0, 0, 0.8); border-top: 1px solid rgba(192, 192, 192, 0.3); backdrop-filter: blur(15px); }
+        .nav-dots { display: flex; justify-content: center; gap: 10px; padding: 20px; background: rgba(0,0,0,0.8); border-top: 1px solid rgba(192,192,192,0.1); }
         .dot { width: 30px; height: 4px; background: rgba(0, 242, 255, 0.2); cursor: pointer; transition: 0.4s; }
         .dot.active { background: var(--cyan); box-shadow: 0 0 15px var(--cyan); width: 60px; }
     </style>
@@ -128,27 +103,26 @@
 
 <div class="header-nav">
     <input type="text" id="browser-input" placeholder="NEURAL SEARCH OR URL ENTRY..." autocomplete="off">
-    <button class="random-btn" style="background: rgba(255, 255, 255, 0.1); border: 1px solid #c0c0c0; color: #fff; cursor: pointer;" onclick="neuralRandomizer()">[ RANDOM ]</button>
+    <button onclick="neuralRandomizer()" style="background: rgba(255, 255, 255, 0.1); border: 1px solid #c0c0c0; color: #fff; cursor: pointer; padding: 0 15px;">[ RANDOM ]</button>
 </div>
 
 <div class="nexus-viewport" id="viewport"></div>
 <div class="nav-dots" id="dots"></div>
 
 <script>
-    const PROXY = "https://artemis-proxy.onrender.com/";
     const data = {
-        "INTEL": [{ name: "Wikipedia", url: "wikipedia.org" }, { name: "WolframAlpha", url: "wolframalpha.com" }, { name: "Archive.org", url: "archive.org" }, { name: "Britannica", url: "britannica.com" }, { name: "Reddit", url: "reddit.com" }, { name: "Quora", url: "quora.com" }, { name: "ArXiv", url: "arxiv.org" }, { name: "WikiHow", url: "wikihow.com" }, { name: "Gutenberg", url: "gutenberg.org" }, { name: "Investopedia", url: "investopedia.com" }],
-        "FORGE": [{ name: "GitHub", url: "github.com" }, { name: "StackOverflow", url: "stackoverflow.com" }, { name: "CodePen", url: "codepen.io" }, { name: "Figma", url: "figma.com" }, { name: "Canva", url: "canva.com" }, { name: "Replit", url: "replit.com" }, { name: "DevDocs", url: "devdocs.io" }, { name: "Hugging Face", url: "huggingface.co" }, { name: "Vercel", url: "vercel.com" }, { name: "Dribbble", url: "dribbble.com" }],
-        "SIM_I": [{ name: "YouTube", url: "youtube.com" }, { name: "Netflix", url: "netflix.com" }, { name: "Spotify", url: "googleusercontent.com/spotify.com/0" }, { name: "Twitch", url: "twitch.tv" }, { name: "IMDb", url: "imdb.com" }, { name: "Disney+", url: "disneyplus.com" }, { name: "Hulu", url: "hulu.com" }, { name: "Steam", url: "steampowered.com" }, { name: "Epic Games", url: "epicgames.com" }, { name: "Crunchyroll", url: "crunchyroll.com" }],
-        "EXCHANGE": [{ name: "TradingView", url: "tradingview.com" }, { name: "CoinMarketCap", url: "coinmarketcap.com" }, { name: "PayPal", url: "paypal.com" }, { name: "Coinbase", url: "coinbase.com" }, { name: "Amazon", url: "amazon.com" }, { name: "eBay", url: "ebay.com" }, { name: "Shopify", url: "shopify.com" }, { name: "Etsy", url: "etsy.com" }, { name: "Robinhood", url: "robinhood.com" }, { name: "Binance", url: "binance.com" }],
-        "SOCIAL": [{ name: "X / Twitter", url: "x.com" }, { name: "Facebook", url: "facebook.com" }, { name: "LinkedIn", url: "linkedin.com" }, { name: "Threads", url: "threads.net" }, { name: "Snapchat", url: "snapchat.com" }, { name: "WhatsApp", url: "web.whatsapp.com" }, { name: "Telegram", url: "web.telegram.org" }, { name: "Signal", url: "signal.org" }, { name: "Mastodon", url: "mastodon.social" }, { name: "Bluesky", url: "bsky.app" }],
-        "VOID": [{ name: "DuckDuckGo", url: "duckduckgo.com" }, { name: "Brave Search", url: "search.brave.com" }, { name: "Shodan", url: "shodan.io" }, { name: "Wayback Machine", url: "web.archive.org" }, { name: "Ecosia", url: "ecosia.org" }, { name: "Bing", url: "bing.com" }, { name: "Startpage", url: "startpage.com" }, { name: "Swisscows", url: "swisscows.com" }, { name: "Yandex", url: "yandex.com" }, { name: "Artemis Main", url: "vercel.app" }]
+        "INTEL": [{ name: "Wikipedia", url: "wikipedia.org" }, { name: "WolframAlpha", url: "wolframalpha.com" }, { name: "Archive.org", url: "archive.org" }, { name: "Britannica", url: "britannica.com" }, { name: "Reddit", url: "reddit.com" }],
+        "FORGE": [{ name: "GitHub", url: "github.com" }, { name: "StackOverflow", url: "stackoverflow.com" }, { name: "CodePen", url: "codepen.io" }, { name: "Replit", url: "replit.com" }, { name: "Hugging Face", url: "huggingface.co" }],
+        "SIM_I": [{ name: "YouTube", url: "youtube.com" }, { name: "Netflix", url: "netflix.com" }, { name: "Spotify", url: "googleusercontent.com/spotify.com/0" }, { name: "Twitch", url: "twitch.tv" }, { name: "IMDb", url: "imdb.com" }],
+        "EXCHANGE": [{ name: "TradingView", url: "tradingview.com" }, { name: "CoinMarketCap", url: "coinmarketcap.com" }, { name: "PayPal", url: "paypal.com" }, { name: "Amazon", url: "amazon.com" }, { name: "Binance", url: "binance.com" }],
+        "SOCIAL": [{ name: "X / Twitter", url: "x.com" }, { name: "LinkedIn", url: "linkedin.com" }, { name: "Threads", url: "threads.net" }, { name: "WhatsApp", url: "web.whatsapp.com" }, { name: "Telegram", url: "web.telegram.org" }],
+        "VOID": [{ name: "DuckDuckGo", url: "duckduckgo.com" }, { name: "Brave Search", url: "search.brave.com" }, { name: "Shodan", url: "shodan.io" }, { name: "Bing", url: "bing.com" }, { name: "Artemis Main", url: "vercel.app" }]
     };
 
     const viewport = document.getElementById('viewport');
     const dotsContainer = document.getElementById('dots');
 
-    // BUILD UI
+    /* --- UI BUILDER --- */
     Object.keys(data).forEach((sector, index) => {
         const page = document.createElement('div');
         page.className = 'sector-page';
@@ -158,7 +132,7 @@
         data[sector].forEach(site => {
             const node = document.createElement('div');
             node.className = 'node';
-            node.innerHTML = `<span>${site.name}</span><small>${site.url}</small>`;
+            node.innerHTML = `<span>${site.name}</span><small style="font-size:8px; opacity:0.5;">${site.url}</small>`;
             node.onclick = () => transmit(site.url, site.name);
             grid.appendChild(node);
         });
@@ -171,82 +145,34 @@
         dotsContainer.appendChild(dot);
     });
 
-    // BOOT SEQUENCE
-    window.addEventListener('load', () => {
-        const status = document.getElementById('status-log');
-        const progress = document.getElementById('boot-progress');
-        const overlay = document.getElementById('artemis-boot');
-        const logs = ["CALIBRATING NEURAL LINK...", "ESTABLISHING PROXY UPLINK...", "BYPASSING FIREWALLS...", "ARTEMIS CORE ONLINE."];
-        let step = 0;
-        const interval = setInterval(() => {
-            if (step < logs.length) {
-                status.innerText = logs[step];
-                progress.style.width = ((step + 1) / logs.length) * 100 + "%";
-                step++;
-            } else {
-                clearInterval(interval);
-                setTimeout(() => {
-                    overlay.style.opacity = '0';
-                    document.body.classList.add('ready');
-                    document.querySelectorAll('.sector-page').forEach((s, i) => {
-                        setTimeout(() => {
-                            s.classList.add('reveal');
-                            s.querySelectorAll('.node').forEach((n, ni) => n.style.transitionDelay = `${ni * 30}ms`);
-                        }, i * 150);
-                    });
-                    setTimeout(() => overlay.remove(), 1500);
-                }, 500);
-            }
-        }, 600);
-    });
-
-    // NEURAL SEARCH (Spectral Filter)
-    document.getElementById('browser-input').addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase().trim();
-        const allNodes = document.querySelectorAll('.node');
-        const allSectors = document.querySelectorAll('.sector-page');
-        if (query === "") {
-            allNodes.forEach(n => { n.classList.remove('spectral-out', 'ping'); });
-            allSectors.forEach(s => s.classList.remove('spectral-hide'));
-            return;
+    /* --- NEURAL SIGNAL LISTENERS --- */
+    window.addEventListener('message', (event) => {
+        if (event.data.type === 'ping_node') {
+            const query = event.data.query.toLowerCase();
+            document.getElementById('browser-input').value = query;
+            document.getElementById('browser-input').dispatchEvent(new Event('input'));
         }
-        allSectors.forEach(sector => {
-            let hasMatch = false;
-            sector.querySelectorAll('.node').forEach(node => {
-                const match = node.innerText.toLowerCase().includes(query);
-                node.classList.toggle('spectral-out', !match);
-                if (match) {
-                    hasMatch = true;
-                    if (!node.classList.contains('ping')) node.classList.add('ping');
-                } else {
-                    node.classList.remove('ping');
-                }
-            });
-            sector.classList.toggle('spectral-hide', !hasMatch);
-        });
     });
 
-    /* --- UPDATED TRANSMIT PROTOCOL --- */
+    /* --- UPDATED MULTI-TAB TRANSMIT PROTOCOL --- */
     function transmit(url, name) {
         let target = url.startsWith('http') ? url : `https://${url}`;
         
-        // Add Proxy if not already present
-        if (!target.includes(PROXY)) target = PROXY + target;
+        // Force IGU mode for Google nodes/searches to prevent Header Errors
+        if (target.includes('google.com/search')) {
+            target = target.includes('igu=1') ? target : target + '&igu=1';
+        }
 
-        // Visual feedback on the Node
+        // Visual ping animation for the clicked node
         const nodes = document.querySelectorAll('.node');
         nodes.forEach(n => {
             if(n.innerText.toUpperCase().includes(name.toUpperCase())) {
-                n.style.boxShadow = "0 0 50px #fff";
-                n.style.borderColor = "#fff";
-                setTimeout(() => {
-                    n.style.boxShadow = "";
-                    n.style.borderColor = "";
-                }, 400);
+                n.classList.add('ping');
+                setTimeout(() => n.classList.remove('ping'), 600);
             }
         });
 
-        // TRANSMIT TO PARENT
+        // SEND TO MAIN OS SHELL (Triggers spawnFrame)
         window.parent.postMessage({ 
             type: 'load_site', 
             url: target, 
@@ -254,7 +180,7 @@
         }, '*');
     }
 
-    // Ensure the hub search bar also transmits to the main shell
+    /* --- SEARCH BAR LOGIC --- */
     document.getElementById('browser-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             const val = e.target.value.trim();
@@ -263,11 +189,20 @@
                     transmit(val, val);
                 } else {
                     const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(val)}&igu=1`;
-                    transmit(searchUrl, "SEARCH: " + val);
+                    transmit(searchUrl, val);
                 }
                 e.target.value = '';
             }
         }
+    });
+
+    // Spectral Filter Search
+    document.getElementById('browser-input').addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        document.querySelectorAll('.node').forEach(node => {
+            const match = node.innerText.toLowerCase().includes(query);
+            node.classList.toggle('spectral-out', query !== "" && !match);
+        });
     });
 
     function neuralRandomizer() {
@@ -279,6 +214,16 @@
     viewport.addEventListener('scroll', () => {
         const index = Math.round(viewport.scrollLeft / viewport.offsetWidth);
         document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index));
+    });
+
+    // Boot Delay
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            document.getElementById('artemis-boot').style.opacity = '0';
+            document.body.classList.add('ready');
+            document.querySelectorAll('.sector-page').forEach(s => s.classList.add('reveal'));
+            setTimeout(() => document.getElementById('artemis-boot').remove(), 1500);
+        }, 2000);
     });
 </script>
 </body>
