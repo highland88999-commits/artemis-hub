@@ -2,128 +2,133 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARTEMIS • NEXUS HUB</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>ARTEMIS • NEXUS HUB 100</title>
     <style>
-        :root { --cyan: #00f2ff; --bg: #000; --glass: rgba(0, 242, 255, 0.05); }
+        :root { --cyan: #00f2ff; --bg: #000; --glass: rgba(0, 242, 255, 0.05); --silver: #c0c0c0; --silver-bloom: rgba(255, 255, 255, 0.15); }
         * { box-sizing: border-box; }
-        body { 
-            background: var(--bg); color: var(--cyan); 
-            font-family: 'Courier New', monospace; margin: 0; 
-            overflow: hidden; height: 100vh; display: flex; flex-direction: column;
-        }
+        body { background: var(--bg); color: var(--cyan); font-family: 'Courier New', monospace; margin: 0; padding: 0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
-        /* Search Section */
-        .header-nav { padding: 20px; border-bottom: 1px solid rgba(0, 242, 255, 0.3); }
-        #browser-input {
-            width: 100%; background: var(--glass); border: 1px solid var(--cyan);
-            padding: 15px; color: var(--cyan); font-size: 1rem; outline: none;
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
-        }
+        /* Header & Search */
+        .header-nav { padding: 15px; border-bottom: 1px solid rgba(0, 242, 255, 0.3); background: rgba(0,0,0,0.9); z-index: 10; display: flex; gap: 10px; }
+        #browser-input { flex: 1; background: var(--glass); border: 1px solid var(--cyan); padding: 12px; color: var(--cyan); font-size: 1rem; outline: none; text-align: center; }
+        .random-btn { background: var(--glass); border: 1px solid var(--silver); color: #fff; padding: 0 15px; cursor: pointer; transition: 0.3s; font-size: 12px; }
+        .random-btn:hover { background: #fff; color: #000; box-shadow: 0 0 15px #fff; }
 
-        /* The Slidable Container */
-        .nexus-viewport {
-            flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
-            scrollbar-width: none; scroll-behavior: smooth;
-        }
+        /* Viewport */
+        .nexus-viewport { flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; scroll-behavior: smooth; }
         .nexus-viewport::-webkit-scrollbar { display: none; }
+        .sector-page { min-width: 100%; height: 100%; padding: 25px; scroll-snap-align: start; display: flex; flex-direction: column; }
+        .sector-title { font-size: 1.5rem; letter-spacing: 6px; margin-bottom: 20px; border-left: 4px solid var(--cyan); padding-left: 15px; text-shadow: 0 0 10px var(--cyan); }
 
-        .sector-page {
-            min-width: 100%; height: 100%; padding: 20px;
-            scroll-snap-align: start; display: flex; flex-direction: column;
-        }
+        /* Grid - Auto-scaling nodes */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; overflow-y: auto; padding-bottom: 50px; }
+        .node { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(0, 242, 255, 0.1); padding: 12px; text-align: center; cursor: pointer; transition: 0.2s; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; min-height: 75px; }
+        .node:hover { background: var(--cyan); color: #000; box-shadow: 0 0 15px var(--cyan); transform: translateY(-2px); }
+        .node span { display: block; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .node small { font-size: 0.55rem; opacity: 0.7; display: block; margin-top: 4px; word-break: break-all; }
 
-        .sector-title { 
-            font-size: 1.5rem; letter-spacing: 5px; margin-bottom: 20px; 
-            border-left: 4px solid var(--cyan); padding-left: 15px;
-        }
-
-        /* Grid Layout */
-        .grid { 
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
-            gap: 15px; overflow-y: auto; padding-bottom: 40px;
-        }
-        .node {
-            background: var(--glass); border: 1px solid rgba(0, 242, 255, 0.2);
-            padding: 15px; text-align: center; cursor: pointer; transition: 0.3s;
-        }
-        .node:hover { background: var(--cyan); color: #000; box-shadow: 0 0 20px var(--cyan); }
-        .node span { display: block; font-size: 0.75rem; font-weight: bold; }
-        .node small { font-size: 0.5rem; opacity: 0.6; display: block; margin-top: 5px; }
-
-        /* Pagination Indicators */
-        .nav-dots {
-            display: flex; justify-content: center; gap: 10px; padding: 15px;
-            background: rgba(0,0,0,0.8);
-        }
-        .dot { width: 10px; height: 10px; border: 1px solid var(--cyan); cursor: pointer; }
-        .dot.active { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+        /* Navigation Dots */
+        .nav-dots { display: flex; justify-content: center; gap: 8px; padding: 15px; background: #000; border-top: 1px solid rgba(192, 192, 192, 0.2); }
+        .dot { width: 25px; height: 3px; background: rgba(0, 242, 255, 0.2); cursor: pointer; transition: 0.3s; }
+        .dot.active { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); width: 50px; }
     </style>
 </head>
 <body>
 
 <div class="header-nav">
-    <input type="text" id="browser-input" placeholder="SEARCH ARCHIVES OR ENTER URL..." autocomplete="off">
+    <input type="text" id="browser-input" placeholder="ENCRYPTED SEARCH OR URL ENTRY..." autocomplete="off">
+    <button class="random-btn" onclick="neuralRandomizer()">[ RANDOM ]</button>
 </div>
 
-<div class="nexus-viewport" id="viewport">
-    </div>
-
+<div class="nexus-viewport" id="viewport"></div>
 <div class="nav-dots" id="dots"></div>
 
 <script>
     const PROXY = "https://artemis-proxy.onrender.com/";
     
+    // Complete 100-site Data Structure
     const data = {
         "INTEL": [
-            { name: "Wikipedia", url: "https://en.wikipedia.org" },
-            { name: "WolframAlpha", url: "https://www.wolframalpha.com" },
-            { name: "Archive.org", url: "https://archive.org" },
-            { name: "Britannica", url: "https://www.britannica.com" },
-            { name: "Reddit", url: "https://www.reddit.com" },
-            { name: "Quora", url: "https://www.quora.com" },
-            { name: "ArXiv", url: "https://arxiv.org" },
-            { name: "WikiHow", url: "https://www.wikihow.com" },
-            { name: "Gutenberg", url: "https://www.gutenberg.org" },
-            { name: "Investopedia", url: "https://www.investopedia.com" }
+            { name: "Wikipedia", url: "wikipedia.org" }, { name: "WolframAlpha", url: "wolframalpha.com" },
+            { name: "Archive.org", url: "archive.org" }, { name: "Britannica", url: "britannica.com" },
+            { name: "Reddit", url: "reddit.com" }, { name: "Quora", url: "quora.com" },
+            { name: "ArXiv", url: "arxiv.org" }, { name: "WikiHow", url: "wikihow.com" },
+            { name: "Gutenberg", url: "gutenberg.org" }, { name: "Investopedia", url: "investopedia.com" }
         ],
         "FORGE": [
-            { name: "GitHub", url: "https://github.com" },
-            { name: "StackOverflow", url: "https://stackoverflow.com" },
-            { name: "CodePen", url: "https://codepen.io" },
-            { name: "Figma", url: "https://www.figma.com" },
-            { name: "Canva", url: "https://www.canva.com" },
-            { name: "Replit", url: "https://replit.com" },
-            { name: "DevDocs", url: "https://devdocs.io" },
-            { name: "Hugging Face", url: "https://huggingface.co" },
-            { name: "Vercel", url: "https://vercel.com" },
-            { name: "Dribbble", url: "https://dribbble.com" }
+            { name: "GitHub", url: "github.com" }, { name: "StackOverflow", url: "stackoverflow.com" },
+            { name: "CodePen", url: "codepen.io" }, { name: "Figma", url: "figma.com" },
+            { name: "Canva", url: "canva.com" }, { name: "Replit", url: "replit.com" },
+            { name: "DevDocs", url: "devdocs.io" }, { name: "Hugging Face", url: "huggingface.co" },
+            { name: "Vercel", url: "vercel.com" }, { name: "Dribbble", url: "dribbble.com" }
+        ],
+        "SIM_I (ENT)": [
+            { name: "YouTube", url: "youtube.com" }, { name: "Netflix", url: "netflix.com" },
+            { name: "Spotify", url: "spotify.com" }, { name: "Twitch", url: "twitch.tv" },
+            { name: "IMDb", url: "imdb.com" }, { name: "Disney+", url: "disneyplus.com" },
+            { name: "Hulu", url: "hulu.com" }, { name: "HBO Max", url: "max.com" },
+            { name: "Prime Video", url: "amazon.com/video" }, { name: "Crunchyroll", url: "crunchyroll.com" },
+            { name: "SoundCloud", url: "soundcloud.com" }, { name: "Pandora", url: "pandora.com" },
+            { name: "Steam", url: "steampowered.com" }, { name: "Epic Games", url: "epicgames.com" },
+            { name: "IGN", url: "ign.com" }, { name: "GameSpot", url: "gamespot.com" },
+            { name: "Vimeo", url: "vimeo.com" }, { name: "DailyMotion", url: "dailymotion.com" },
+            { name: "Letterboxd", url: "letterboxd.com" }, { name: "RottenTomatoes", url: "rottentomatoes.com" }
+        ],
+        "SIM_II (ENT)": [
+            { name: "Discord", url: "discord.com" }, { name: "TikTok", url: "tiktok.com" },
+            { name: "Instagram", url: "instagram.com" }, { name: "Pinterest", url: "pinterest.com" },
+            { name: "Tumblr", url: "tumblr.com" }, { name: "9Gag", url: "9gag.com" },
+            { name: "Buzzfeed", url: "buzzfeed.com" }, { name: "Kotaku", url: "kotaku.com" },
+            { name: "Polygon", url: "polygon.com" }, { name: "The Verge", url: "theverge.com" },
+            { name: "Billboard", url: "billboard.com" }, { name: "Rolling Stone", url: "rollingstone.com" },
+            { name: "Pitchfork", url: "pitchfork.com" }, { name: "Bandcamp", url: "bandcamp.com" },
+            { name: "Mixcloud", url: "mixcloud.com" }, { name: "Deezer", url: "deezer.com" },
+            { name: "Tidal", url: "tidal.com" }, { name: "Last.fm", url: "last.fm" },
+            { name: "Vudu", url: "vudu.com" }, { name: "Plex", url: "plex.tv" }
+        ],
+        "SIM_III (ENT)": [
+            { name: "Medium", url: "medium.com" }, { name: "Vice", url: "vice.com" },
+            { name: "Wired", url: "wired.com" }, { name: "Mashable", url: "mashable.com" },
+            { name: "Giphy", url: "giphy.com" }, { name: "Imgur", url: "imgur.com" },
+            { name: "Fark", url: "fark.com" }, { name: "Cracked", url: "cracked.com" },
+            { name: "DeviantArt", url: "deviantart.com" }, { name: "Behance", url: "behance.net" }
         ],
         "EXCHANGE": [
-            { name: "TradingView", url: "https://www.tradingview.com" },
-            { name: "CoinMarketCap", url: "https://coinmarketcap.com" },
-            { name: "PayPal", url: "https://www.paypal.com" },
-            { name: "Coinbase", url: "https://www.coinbase.com" },
-            { name: "Amazon", url: "https://www.amazon.com" },
-            { name: "eBay", url: "https://www.ebay.com" },
-            { name: "Shopify", url: "https://www.shopify.com" },
-            { name: "Etsy", url: "https://www.etsy.com" },
-            { name: "Robinhood", url: "https://www.robinhood.com" },
-            { name: "Mint", url: "https://mint.intuit.com" }
+            { name: "TradingView", url: "tradingview.com" }, { name: "CoinMarketCap", url: "coinmarketcap.com" },
+            { name: "PayPal", url: "paypal.com" }, { name: "Coinbase", url: "coinbase.com" },
+            { name: "Amazon", url: "amazon.com" }, { name: "eBay", url: "ebay.com" },
+            { name: "Shopify", url: "shopify.com" }, { name: "Etsy", url: "etsy.com" },
+            { name: "Robinhood", url: "robinhood.com" }, { name: "Mint", url: "mint.intuit.com" }
         ],
-        "SIM": [
-            { name: "YouTube", url: "https://www.youtube.com" },
-            { name: "Netflix", url: "https://www.netflix.com" },
-            { name: "Spotify", url: "https://open.spotify.com" },
-            { name: "Twitch", url: "https://www.twitch.tv" },
-            { name: "IMDb", url: "https://www.imdb.com" },
-            { name: "SoundCloud", url: "https://soundcloud.com" },
-            { name: "Steam", url: "https://store.steampowered.com" },
-            { name: "Vimeo", url: "https://vimeo.com" },
-            { name: "Letterboxd", url: "https://letterboxd.com" },
-            { name: "Metacritic", url: "https://www.metacritic.com" }
+        "SOCIAL": [
+            { name: "X / Twitter", url: "x.com" }, { name: "Facebook", url: "facebook.com" },
+            { name: "LinkedIn", url: "linkedin.com" }, { name: "Threads", url: "threads.net" },
+            { name: "Snapchat", url: "snapchat.com" }, { name: "WhatsApp", url: "web.whatsapp.com" },
+            { name: "Telegram", url: "web.telegram.org" }, { name: "Signal", url: "signal.org" },
+            { name: "Mastodon", url: "mastodon.social" }, { name: "Bluesky", url: "bsky.app" }
+        ],
+        "UTILITY": [
+            { name: "Gmail", url: "gmail.com" }, { name: "Outlook", url: "outlook.com" },
+            { name: "Google Drive", url: "drive.google.com" }, { name: "Notion", url: "notion.so" },
+            { name: "Slack", url: "slack.com" }, { name: "Zoom", url: "zoom.us" },
+            { name: "ProtonMail", url: "proton.me" }, { name: "Dropbox", url: "dropbox.com" },
+            { name: "Evernote", url: "evernote.com" }, { name: "Trello", url: "trello.com" }
+        ],
+        "NEWS": [
+            { name: "Reuters", url: "reuters.com" }, { name: "AP News", url: "apnews.com" },
+            { name: "BBC News", url: "bbc.com/news" }, { name: "NY Times", url: "nytimes.com" },
+            { name: "Bloomberg", url: "bloomberg.com" }, { name: "The Guardian", url: "theguardian.com" },
+            { name: "Al Jazeera", url: "aljazeera.com" }, { name: "Financial Times", url: "ft.com" },
+            { name: "Wall St Journal", url: "wsj.com" }, { name: "NPR", url: "npr.org" }
+        ],
+        "VOID": [
+            { name: "DuckDuckGo", url: "duckduckgo.com" }, { name: "Brave Search", url: "search.brave.com" },
+            { name: "Shodan", url: "shodan.io" }, { name: "Wayback Machine", url: "web.archive.org" },
+            { name: "Ecosia", url: "ecosia.org" }, { name: "Bing", url: "bing.com" },
+            { name: "Startpage", url: "startpage.com" }, { name: "Swisscows", url: "swisscows.com" },
+            { name: "Yandex", url: "yandex.com" }, { name: "Artemis Main", url: "vercel.app" }
         ]
-        // Add more sectors (HABITAT, BLACKOPS, etc.) to reach 100
     };
 
     const viewport = document.getElementById('viewport');
@@ -131,48 +136,53 @@
 
     function transmit(url, name) {
         let target = url.startsWith('http') ? url : `https://${url}`;
+        if (target.includes("google.com/search")) target += "&igu=1";
+        else if (target.includes("google.com") && !target.includes("?")) target += "?igu=1";
+
         window.parent.postMessage({ type: 'load_site', url: PROXY + target, name: name.toUpperCase() }, '*');
     }
 
-    // Build the sliding interface
+    function neuralRandomizer() {
+        const allSites = Object.values(data).flat();
+        const randomSite = allSites[Math.floor(Math.random() * allSites.length)];
+        transmit(randomSite.url, "RANDOM: " + randomSite.name);
+    }
+
     Object.keys(data).forEach((sector, index) => {
         const page = document.createElement('div');
         page.className = 'sector-page';
-        page.innerHTML = `<div class="sector-title">${sector} SECTOR</div>`;
-        
+        page.innerHTML = `<div class="sector-title">${sector}</div>`;
         const grid = document.createElement('div');
         grid.className = 'grid';
-        
         data[sector].forEach(site => {
             const node = document.createElement('div');
             node.className = 'node';
-            node.innerHTML = `<span>${site.name}</span><small>${site.url.replace('https://','')}</small>`;
+            node.innerHTML = `<span>${site.name}</span><small>${site.url}</small>`;
             node.onclick = () => transmit(site.url, site.name);
             grid.appendChild(node);
         });
-        
         page.appendChild(grid);
         viewport.appendChild(page);
 
-        // Add dot
         const dot = document.createElement('div');
         dot.className = `dot ${index === 0 ? 'active' : ''}`;
-        dot.onclick = () => viewport.scrollTo({ left: window.innerWidth * index });
+        dot.onclick = () => viewport.scrollTo({ left: viewport.offsetWidth * index, behavior: 'smooth' });
         dotsContainer.appendChild(dot);
     });
 
-    // Update active dot on scroll
     viewport.addEventListener('scroll', () => {
-        const index = Math.round(viewport.scrollLeft / window.innerWidth);
+        const index = Math.round(viewport.scrollLeft / viewport.offsetWidth);
         document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index));
     });
 
-    // Search functionality
     document.getElementById('browser-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
-            const val = e.target.value;
-            if (val.includes('.') && !val.includes(' ')) transmit(val, val);
-            else transmit(`https://duckduckgo.com/?q=${encodeURIComponent(val)}`, "SEARCH");
+            const val = e.target.value.trim();
+            if (val) {
+                if (val.includes('.') && !val.includes(' ')) transmit(val, val);
+                else transmit(`https://www.google.com/search?q=${encodeURIComponent(val)}&igu=1`, "SEARCH");
+                e.target.value = '';
+            }
         }
     });
 </script>
