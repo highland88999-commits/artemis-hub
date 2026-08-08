@@ -1,0 +1,67 @@
+name: Artemis Hub Cloud Runner
+
+# 1. THE TRIGGERS
+# This allows the Neon Shell to trigger it via the API, 
+# and also runs automatically if you push code to main.
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Developer task (install, build, test, deploy)'
+        required: true
+        default: 'deploy'
+
+jobs:
+  hub_execution_pipeline:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Step 1: Pull the Artemis Hub code into the cloud runner
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v3
+
+      # Step 2: Setup the exact Node environment needed for your server.js
+      - name: ⚙️ Setup Node.js (v18)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm' # Caches Express and other modules for hyper-fast installs
+
+      # Step 3: Run the install command triggered by Neon Shell
+      - name: 📦 Install Hub Dependencies
+        run: npm install
+
+      # Step 4: Safely attempt a build (Will skip cleanly since your package.json doesn't require a build step right now)
+      - name: 🛠️ Execute Build
+        if: ${{ github.event.inputs.task == 'build' || github.event.inputs.task == 'deploy' || github.event_name == 'push' }}
+        run: npm run build --if-present
+
+      # Step 5: Test the Express Server Boot
+      # This boots server.js in the background to ensure it doesn't crash before deploying
+      - name: 🧪 Verify Server Integrity
+        if: ${{ github.event.inputs.task == 'test' || github.event.inputs.task == 'deploy' || github.event_name == 'push' }}
+        run: |
+          echo "Booting Artemis Hub locally..."
+          nohup npm start & 
+          sleep 3
+          curl -f http://localhost:3000 || exit 1
+          echo "Server integrity verified. Ready for deployment."
+
+      # Step 6: Production Deployment
+      # (Uncomment the block below based on where you are hosting Artemis Hub)
+      - name: 🚀 Execute Cloud Deployment
+        if: ${{ github.event.inputs.task == 'deploy' || github.event_name == 'push' }}
+        run: |
+          echo "Initiating deployment sequence..."
+          
+          # --- IF HOSTING ON VERCEL ---
+          # npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+          
+          # --- IF HOSTING ON RENDER ---
+          # curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          
+          # --- IF HOSTING ON HEROKU ---
+          # git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/artemis-hub.git
+          # git push heroku main
