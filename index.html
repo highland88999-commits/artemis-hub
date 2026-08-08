@@ -251,6 +251,20 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnZXdidGZ0b2x5eHljdHBzdml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyMTUxNjgsImV4cCI6MjEwMTc5MTE2OH0.gALvtvDMdKDT0tvbWqygjR2311Q_JztEr18PPIPzM4A';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // --- ARTEMIS PROXY ENGINE ---
+    const PROXY_URL = 'https://artemis-proxy-rcfq.onrender.com/';
+
+    // Helper to conditionally wrap URLs in the proxy to bypass X-Frame-Options
+    function getProxiedUrl(targetUrl) {
+        // If it's already proxied, don't double wrap it
+        if (targetUrl.startsWith(PROXY_URL)) return targetUrl;
+        
+        // Add exceptions here if you want internal Vercel apps to load directly (uncomment if needed)
+        // if (targetUrl.includes('vercel.app')) return targetUrl;
+        
+        return PROXY_URL + targetUrl;
+    }
+
     // --- OS STATE ---
     let currentUser = null;
     let isGuest = false;
@@ -440,6 +454,10 @@
         if (threads[id]) return focusWindow(id); // Prevent dupes
 
         let finalUrl = url.includes('google.com/search') && !url.includes('igu=1') ? url + '&igu=1' : url;
+        
+        // Pass through proxy engine for the iframe ONLY (keeps address bar clean)
+        let iframeSrc = getProxiedUrl(finalUrl);
+
         const offset = (Object.keys(threads).length % 5) * 30;
         
         const x = forceX || `${100 + offset}px`;
@@ -462,7 +480,7 @@
                 </div>
                 <div class="iframe-wrapper">
                     <div class="drag-shield" id="shield-${id}"></div>
-                    <iframe id="iframe-${id}" src="${finalUrl}"></iframe>
+                    <iframe id="iframe-${id}" src="${iframeSrc}"></iframe>
                 </div>
             </div>`;
         
@@ -474,6 +492,16 @@
         updateDock();
         
         if (triggerCloud) NexusCloud.triggerSave();
+    }
+
+    function navigateInternal(id) {
+        const input = document.getElementById(`addr-${id}`);
+        const iframe = document.getElementById(`iframe-${id}`);
+        let url = input.value.trim();
+        if (!url.startsWith('http')) url = 'https://' + url;
+        
+        // Push the manual URL entry through the proxy as well
+        iframe.src = getProxiedUrl(url);
     }
 
     function focusWindow(id) {
