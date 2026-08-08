@@ -1,0 +1,44 @@
+# ARTEMIS • APEX HERITAGE OS & NEON SHELL
+> *Enterprise-Grade Cyberpunk Workspace & Cloud Execution Environment*
+
+![Status](https://img.shields.io/badge/STATUS-ACTIVE-00f9ff?style=flat-square&logo=ion-icon)
+![Cloud](https://img.shields.io/badge/SUPABASE-CONNECTED-39ff14?style=flat-square&logo=supabase)
+![CI/CD](https://img.shields.io/badge/GITHUB_ACTIONS-LINKED-ff00aa?style=flat-square&logo=github)
+
+---
+
+## ⚡ Overview
+
+**Artemis Apex Heritage OS** (featuring the **Neon Shell v3.5.0** terminal subsystem) is an advanced, high-performance web-based operating system and cloud workspace. Designed with a distinct cyberpunk/synthwave aesthetic, it combines a multi-environment window manager, secure Supabase cloud persistence (Auth, Save States, Bookmarks), and a remote terminal engine capable of dispatching CI/CD workflows directly via GitHub Actions.
+
+---
+
+## 🚀 Core Architecture & Features
+
+*   **Multi-Environment Engine:** Instantly reconfigures themes, accent colors (`--accent`), fonts, and wallpapers across four protocol modes: **ARTEMIS**, **APPLE**, **LINUX**, and **MICROSOFT**.
+*   **Supabase Cloud Core:** 
+    *   *Authentication:* Secure email/password gateway with graceful failover to local Guest Mode.
+    *   *Save States:* Auto-saves active window layouts, positions, z-indexes, and minimization states across sessions.
+    *   *Dynamic Bookmarking:* Real-time user bookmarking synced directly to cloud tables.
+*   **Neon Shell Terminal Workspace:** Full read/write file navigation, `nano` text editing with base64 Git commits, and remote command dispatching.
+*   **Cloud Infrastructure Execution:** Intercepts commands (`npm install`, `deploy`) and triggers remote GitHub Action workflows (`install-build.yml`, `deploy-modal.yml`) via API endpoints.
+
+---
+
+## 🛠️ Tech Stack
+
+*   **Frontend:** Vanilla JavaScript (ES6+), Tailwind CSS, FontAwesome.
+*   **Backend:** Node.js, Express.
+*   **Database & Auth:** Supabase (PostgreSQL with Row Level Security).
+*   **VCS / CI/CD:** GitHub REST API & Actions Dispatcher.
+
+---
+
+## 📦 Quick Start & Installation
+
+### 1. Clone & Setup
+Ensure you have **Node.js** installed on your machine.
+
+```bash
+git clone [https://github.com/your-username/artemis-hub.git](https://github.com/your-username/artemis-hub.git)
+cd artemis-hub
