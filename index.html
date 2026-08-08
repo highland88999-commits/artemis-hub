@@ -251,17 +251,52 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnZXdidGZ0b2x5eHljdHBzdml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyMTUxNjgsImV4cCI6MjEwMTc5MTE2OH0.gALvtvDMdKDT0tvbWqygjR2311Q_JztEr18PPIPzM4A';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // --- ARTEMIS PROXY ENGINE ---
+    // --- ARTEMIS EDGE ROUTING ENGINE ---
     const PROXY_URL = 'https://artemis-proxy-rcfq.onrender.com/';
 
-    // Helper to conditionally wrap URLs in the proxy to bypass X-Frame-Options
+    const ROUTING_MATRIX = {
+        // Domains that natively allow iframes or use specific bypasses (Saves Proxy Bandwidth)
+        directAllow: [
+            'google.com/search',
+            'youtube.com/embed',
+            'player.vimeo.com',
+            'wikipedia.org',
+            'nexusvortex.ca',
+            'vercel.app',
+            'onrender.com',
+            'catbox.moe'
+        ],
+        // Anti-Bot/Strict Domains that will ban Render Datacenter IPs or trigger CAPTCHAs.
+        // We route these direct. (If they block iframes natively, they fail safely without burning proxy CPU).
+        proxyBypass: [
+            'netflix.com',
+            'chatgpt.com',
+            'openai.com',
+            'anthropic.com',
+            'claude.ai',
+            'bank',
+            'paypal.com'
+        ]
+    };
+
     function getProxiedUrl(targetUrl) {
-        // If it's already proxied, don't double wrap it
+        // 1. Prevent double proxying
         if (targetUrl.startsWith(PROXY_URL)) return targetUrl;
         
-        // Add exceptions here if you want internal Vercel apps to load directly (uncomment if needed)
-        // if (targetUrl.includes('vercel.app')) return targetUrl;
+        const urlLower = targetUrl.toLowerCase();
         
+        // 2. Direct Allowlist check
+        if (ROUTING_MATRIX.directAllow.some(domain => urlLower.includes(domain))) {
+            return targetUrl;
+        }
+
+        // 3. Anti-Bot / CAPTCHA Bypass check
+        if (ROUTING_MATRIX.proxyBypass.some(domain => urlLower.includes(domain))) {
+            console.warn(`[ROUTER] Edge Matrix match for ${targetUrl}. Bypassing Neural Lock to avoid Datacenter CAPTCHA.`);
+            return targetUrl;
+        }
+        
+        // 4. Default: Route through Artemis Proxy to strip X-Frame-Options
         return PROXY_URL + targetUrl;
     }
 
@@ -356,7 +391,7 @@
             else document.getElementById('auth-error').innerText = "Entity Registered. Please Log In.";
         },
         async logout() {
-            if (isGuest) return location.reload(); // If guest, just refresh to go to login screen
+            if (isGuest) return location.reload(); 
             await supabaseClient.auth.signOut();
             location.reload();
         },
@@ -364,10 +399,9 @@
         // --- SAVE STATES ---
         triggerSave() {
             clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(() => this.saveSessionState(), 1000); // Debounce saves
+            saveTimeout = setTimeout(() => this.saveSessionState(), 1000); 
         },
         async saveSessionState() {
-            // Build layout state payload
             const statePayload = {};
             Object.keys(threads).forEach(id => {
                 const el = document.getElementById(id);
@@ -397,7 +431,6 @@
                 if (data) savedState = data.session_data;
             }
 
-            // Fallback mode if no save state exists
             const mode = localStorage.getItem('artemis-mode') || 'ARTEMIS';
             switchMode(mode);
 
@@ -407,7 +440,6 @@
                     spawnFrame(w.url, w.name, w.icon, id, w.x, w.y, w.w, w.h, w.minimized, false);
                 });
             } else {
-                // First boot default apps
                 spawnFrame('https://artemis-hub.vercel.app/', 'NEXUS HUB', '🧬');
             }
         },
@@ -451,11 +483,11 @@
     // --- WINDOW MANAGEMENT ---
     function spawnFrame(url, name, icon, forceId=null, forceX=null, forceY=null, forceW=null, forceH=null, forceMin=false, triggerCloud=true) {
         const id = forceId || ('win-' + Date.now());
-        if (threads[id]) return focusWindow(id); // Prevent dupes
+        if (threads[id]) return focusWindow(id); 
 
         let finalUrl = url.includes('google.com/search') && !url.includes('igu=1') ? url + '&igu=1' : url;
         
-        // Pass through proxy engine for the iframe ONLY (keeps address bar clean)
+        // Pass through Edge Router
         let iframeSrc = getProxiedUrl(finalUrl);
 
         const offset = (Object.keys(threads).length % 5) * 30;
@@ -500,7 +532,7 @@
         let url = input.value.trim();
         if (!url.startsWith('http')) url = 'https://' + url;
         
-        // Push the manual URL entry through the proxy as well
+        // Pass the manual URL entry through Edge Router
         iframe.src = getProxiedUrl(url);
     }
 
@@ -564,11 +596,10 @@
         document.addEventListener('mouseup', () => {
             if (isDragging) {
                 isDragging = false; shield.style.display = 'none';
-                NexusCloud.triggerSave(); // Save new position
+                NexusCloud.triggerSave(); 
             }
         });
 
-        // Save state on resize completion
         const observer = new ResizeObserver(() => NexusCloud.triggerSave());
         observer.observe(el);
     }
