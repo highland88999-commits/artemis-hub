@@ -27,7 +27,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'npm' # Caches Express and other modules for hyper-fast installs
 
       # Step 3: Run the install command triggered by Neon Shell
       - name: 📦 Install Hub Dependencies
