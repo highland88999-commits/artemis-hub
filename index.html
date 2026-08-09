@@ -257,45 +257,29 @@
     const ROUTING_MATRIX = {
         // Domains that natively allow iframes or use specific bypasses (Saves Proxy Bandwidth)
         directAllow: [
-            'google.com/search',
-            'youtube.com/embed',
-            'player.vimeo.com',
-            'wikipedia.org',
-            'nexusvortex.ca',
-            'vercel.app',
-            'onrender.com',
-            'catbox.moe'
+            'google.com/search', 'youtube.com/embed', 'player.vimeo.com', 
+            'wikipedia.org', 'vercel.app', 'onrender.com', 'catbox.moe', 'nexusvortex.ca'
         ],
-        // Anti-Bot/Strict Domains that will ban Render Datacenter IPs or trigger CAPTCHAs.
-        // We route these direct. (If they block iframes natively, they fail safely without burning proxy CPU).
-        proxyBypass: [
-            'chatgpt.com',
-            'openai.com',
-            'anthropic.com',
-            'claude.ai',
-            'bank',
-            'paypal.com'
+        // Sites that have DRM, aggressive Anti-Bot, or strict CORS where proxies fail.
+        popOutAllow: [
+            'netflix.com', 'chatgpt.com', 'openai.com', 'anthropic.com', 
+            'claude.ai', 'bank', 'paypal.com', 'disneyplus.com', 'hulu.com',
+            'primevideo.com', 'max.com', 'spotify.com', 'apple.com'
         ]
     };
 
     function getProxiedUrl(targetUrl) {
-        // 1. Prevent double proxying
+        // Prevent double proxying
         if (targetUrl.startsWith(PROXY_URL)) return targetUrl;
         
         const urlLower = targetUrl.toLowerCase();
         
-        // 2. Direct Allowlist check
+        // Direct Allowlist check
         if (ROUTING_MATRIX.directAllow.some(domain => urlLower.includes(domain))) {
             return targetUrl;
         }
-
-        // 3. Anti-Bot / CAPTCHA Bypass check
-        if (ROUTING_MATRIX.proxyBypass.some(domain => urlLower.includes(domain))) {
-            console.warn(`[ROUTER] Edge Matrix match for ${targetUrl}. Bypassing Neural Lock to avoid Datacenter CAPTCHA.`);
-            return targetUrl;
-        }
         
-        // 4. Default: Route through Artemis Proxy to strip X-Frame-Options
+        // Default: Route through Artemis Proxy to strip X-Frame-Options
         return PROXY_URL + targetUrl;
     }
 
@@ -318,6 +302,7 @@
         { name: "ARCHITECT", url: "https://architect-artemis.vercel.app/", icon: "📐" },
         { name: "AETHERIS", url: "https://aetheris-business-model.vercel.app/", icon: "🔱" },
         { name: "TRACKER", url: "https://olympus-aetheris.vercel.app/", icon: "🛰️" },
+        { name: "NETFLIX", url: "https://netflix.com", icon: "🍿" },
         { name: "STARBLOOD", url: "https://starblood.vercel.app/", icon: "🩸" }
     ];
 
@@ -325,7 +310,6 @@
     window.addEventListener('load', async () => {
         document.getElementById('loader-progress').style.width = '100%';
         
-        // Check active session immediately
         const { data: { session } } = await supabaseClient.auth.getSession();
         currentUser = session?.user || null;
 
@@ -373,7 +357,7 @@
         }, 1000);
     }
 
-    // --- NEXUS CLOUD ENGINE (Auth, Save States, Bookmarks) ---
+    // --- NEXUS CLOUD ENGINE ---
     const NexusCloud = {
         async login() {
             const email = document.getElementById('auth-email').value;
@@ -394,8 +378,6 @@
             await supabaseClient.auth.signOut();
             location.reload();
         },
-
-        // --- SAVE STATES ---
         triggerSave() {
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(() => this.saveSessionState(), 1000); 
@@ -414,18 +396,13 @@
                     };
                 }
             });
-
-            if (isGuest) {
-                localStorage.setItem('apex_session', JSON.stringify(statePayload));
-            } else if (currentUser) {
-                await supabaseClient.from('apex_sessions').upsert({ user_id: currentUser.id, session_data: statePayload });
-            }
+            if (isGuest) localStorage.setItem('apex_session', JSON.stringify(statePayload));
+            else if (currentUser) await supabaseClient.from('apex_sessions').upsert({ user_id: currentUser.id, session_data: statePayload });
         },
         async restoreSessionState() {
             let savedState = null;
-            if (isGuest) {
-                savedState = JSON.parse(localStorage.getItem('apex_session'));
-            } else if (currentUser) {
+            if (isGuest) savedState = JSON.parse(localStorage.getItem('apex_session'));
+            else if (currentUser) {
                 const { data } = await supabaseClient.from('apex_sessions').select('session_data').eq('user_id', currentUser.id).single();
                 if (data) savedState = data.session_data;
             }
@@ -442,8 +419,6 @@
                 spawnFrame('https://artemis-hub.vercel.app/', 'NEXUS HUB', '🧬');
             }
         },
-
-        // --- BOOKMARKS ---
         async toggleBookmark(name, url, icon) {
             if (isGuest) {
                 let bms = JSON.parse(localStorage.getItem('apex_bookmarks') || "[]");
@@ -458,17 +433,14 @@
         },
         async loadBookmarks() {
             let bms = [];
-            if (isGuest) {
-                bms = JSON.parse(localStorage.getItem('apex_bookmarks') || "[]");
-            } else if (currentUser) {
+            if (isGuest) bms = JSON.parse(localStorage.getItem('apex_bookmarks') || "[]");
+            else if (currentUser) {
                 const { data } = await supabaseClient.from('apex_bookmarks').select('*').order('created_at', { ascending: false });
                 if (data) bms = data;
             }
-            
             const cont = document.getElementById('bookmarks-container');
             cont.innerHTML = '';
             if(bms.length === 0) { cont.innerHTML = '<div style="color:#666; font-size:10px;">No active links.</div>'; return; }
-            
             bms.forEach(b => {
                 const el = document.createElement('div');
                 el.className = 'bookmark-item';
@@ -481,16 +453,31 @@
 
     // --- WINDOW MANAGEMENT ---
     function spawnFrame(url, name, icon, forceId=null, forceX=null, forceY=null, forceW=null, forceH=null, forceMin=false, triggerCloud=true) {
+        let finalUrl = url.includes('google.com/search') && !url.includes('igu=1') ? url + '&igu=1' : url;
+        const urlLower = finalUrl.toLowerCase();
+
+        // 1. Check for Pop-Out requirement (DRM / Anti-Bot)
+        if (ROUTING_MATRIX.popOutAllow.some(domain => urlLower.includes(domain))) {
+            console.warn(`[OS] DRM/Security block detected for ${name}. Executing Smart Pop-Out.`);
+            
+            // Calculate screen center for the popup
+            const width = Math.min(1200, window.innerWidth * 0.9);
+            const height = Math.min(800, window.innerHeight * 0.9);
+            const left = (window.innerWidth / 2) - (width / 2);
+            const top = (window.innerHeight / 2) - (height / 2);
+            
+            // Open a standalone native window 
+            window.open(finalUrl, name, `width=${width},height=${height},top=${top},left=${left},toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes`);
+            return; // Halt iframe creation
+        }
+
+        // 2. Standard Iframe Build
         const id = forceId || ('win-' + Date.now());
         if (threads[id]) return focusWindow(id); 
 
-        let finalUrl = url.includes('google.com/search') && !url.includes('igu=1') ? url + '&igu=1' : url;
-        
-        // Pass through Edge Router
         let iframeSrc = getProxiedUrl(finalUrl);
 
         const offset = (Object.keys(threads).length % 5) * 30;
-        
         const x = forceX || `${100 + offset}px`;
         const y = forceY || `${100 + offset}px`;
         const w = forceW || `900px`;
@@ -521,7 +508,6 @@
         makeDraggable(id);
         if(!forceMin) focusWindow(id);
         updateDock();
-        
         if (triggerCloud) NexusCloud.triggerSave();
     }
 
@@ -531,8 +517,27 @@
         let url = input.value.trim();
         if (!url.startsWith('http')) url = 'https://' + url;
         
-        // Pass the manual URL entry through Edge Router
+        const urlLower = url.toLowerCase();
+        
+        // Check Matrix on manual URL entry
+        if (ROUTING_MATRIX.popOutAllow.some(domain => urlLower.includes(domain))) {
+            console.warn(`[OS] DRM/Security block detected. Executing Smart Pop-Out.`);
+            const width = Math.min(1200, window.innerWidth * 0.9);
+            const height = Math.min(800, window.innerHeight * 0.9);
+            const left = (window.innerWidth / 2) - (width / 2);
+            const top = (window.innerHeight / 2) - (height / 2);
+            
+            window.open(url, '_blank', `width=${width},height=${height},top=${top},left=${left},toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes`);
+            
+            // Revert the address bar to keep the current iframe intact
+            input.value = iframe.src.replace(PROXY_URL, '');
+            return;
+        }
+
+        // Pass safe manual URL entry through Edge Router
         iframe.src = getProxiedUrl(url);
+        threads[id].url = url; 
+        NexusCloud.triggerSave();
     }
 
     function focusWindow(id) {
