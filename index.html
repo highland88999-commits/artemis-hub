@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- Prevents scaling on mobile to force native app feel -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ARTEMIS • APEX HERITAGE</title>
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#00f2ff">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -48,17 +50,17 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             transition: opacity 1s ease, visibility 1s;
         }
-        #boot-video { width: 320px; margin-bottom: 40px; filter: drop-shadow(var(--bloom)); }
+        #boot-video { width: 320px; max-width: 80vw; margin-bottom: 40px; filter: drop-shadow(var(--bloom)); }
         .loader-container { width: 250px; height: 2px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
         #loader-progress { width: 0%; height: 100%; background: var(--accent); box-shadow: var(--bloom); transition: width 2s cubic-bezier(0.4, 0, 0.2, 1); }
 
         /* AUTH GATEWAY */
         .auth-panel {
             background: var(--bg-glass); border: 1px solid var(--accent); border-radius: 16px;
-            padding: 40px; width: 100%; max-width: 400px; backdrop-filter: blur(20px);
+            padding: 40px 30px; width: 90%; max-width: 400px; backdrop-filter: blur(20px);
             box-shadow: 0 20px 50px rgba(0,0,0,0.8), var(--bloom); text-align: center;
         }
-        .auth-panel h2 { color: #fff; margin-bottom: 20px; letter-spacing: 2px; }
+        .auth-panel h2 { color: #fff; margin-bottom: 20px; letter-spacing: 2px; font-size: 1.2rem; }
         .auth-input {
             width: 100%; padding: 12px 15px; margin-bottom: 15px; border-radius: 8px; border: 1px solid var(--border-glass);
             background: rgba(0,0,0,0.5); color: #fff; font-family: inherit; outline: none; transition: 0.3s;
@@ -83,21 +85,26 @@
         .meta-item span { color: #fff; font-weight: bold; transition: color 0.3s; }
         
         /* User Profile / Search */
-        .header-actions { display: flex; gap: 15px; align-items: center; }
+        .header-actions { display: flex; gap: 15px; align-items: center; width: auto; justify-content: flex-end; }
         .header-search input {
             width: 250px; padding: 8px 20px; border-radius: 20px; border: 1px solid var(--border-glass);
             background: rgba(0,0,0,0.5); color: #fff; outline: none; font-size: 11px; backdrop-filter: blur(10px); cursor: pointer;
         }
         #auth-status-btn {
             padding: 6px 15px; border-radius: 15px; border: 1px solid var(--accent); background: rgba(0,242,255,0.1);
-            color: var(--accent); cursor: pointer; font-size: 10px; font-weight: bold; transition: 0.3s;
+            color: var(--accent); cursor: pointer; font-size: 10px; font-weight: bold; transition: 0.3s; white-space: nowrap;
         }
         #auth-status-btn:hover { background: var(--accent); color: #000; box-shadow: var(--bloom); }
+        #mobile-hud-btn {
+            display: none; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--accent);
+            background: rgba(0,0,0,0.5); color: var(--accent); cursor: pointer; font-size: 14px;
+        }
 
         /* --- DESKTOP GRID --- */
         #desktop-app-grid {
             position: absolute; top: 100px; left: 40px; width: calc(100% - 360px);
             display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 30px; z-index: 50;
+            padding: 20px;
         }
         .app-icon { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: 0.3s; }
         .app-icon:hover { transform: translateY(-5px) scale(1.05); }
@@ -107,19 +114,21 @@
             background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); margin-bottom: 8px; transition: 0.3s;
         }
         .app-icon:hover .icon-box { border-color: var(--accent); box-shadow: var(--bloom); }
-        .app-label { font-size: 11px; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .app-label { font-size: 11px; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.8); text-align: center; }
 
         /* --- RIGHT HUD --- */
-        #right-hud { position: fixed; right: 20px; top: 80px; width: 280px; display: flex; flex-direction: column; gap: 15px; z-index: 90; }
+        #right-hud { 
+            position: fixed; right: 20px; top: 80px; width: 280px; 
+            display: flex; flex-direction: column; gap: 15px; z-index: 90; 
+            transition: all 0.3s ease;
+        }
         .hud-panel { background: var(--bg-glass); border: 1px solid var(--border-glass); border-radius: 12px; padding: 20px; backdrop-filter: blur(20px); }
-        
         .status-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 15px; color: #fff; text-transform: uppercase;}
         .glow-text { color: var(--accent); text-shadow: var(--bloom); font-weight: bold; }
         .mode-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; }
         .mode-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); color: var(--accent); padding: 8px 0; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: 0.3s;}
         .mode-btn:hover { background: var(--accent); color: #000; box-shadow: var(--bloom); }
         
-        /* Bookmarks List */
         .bookmark-list { max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
         .bookmark-item { display: flex; align-items: center; gap: 10px; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 6px; cursor: pointer; border: 1px solid transparent; transition: 0.2s;}
         .bookmark-item:hover { border-color: var(--accent); }
@@ -135,37 +144,80 @@
         }
         .holoframe:focus-within { border-color: var(--accent); }
         .holo-header { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); cursor: move; background: rgba(0,0,0,0.4); }
-        .window-title { color: #fff; font-weight: bold; font-size: 12px; display: flex; align-items: center; gap: 8px;}
-        .internal-address-bar { background: rgba(255,255,255,0.05); border: 1px solid transparent; color: #fff; font-family: inherit; font-size: 10px; padding: 4px 10px; width: 250px; border-radius: 6px; outline: none; transition: 0.3s; }
+        .window-title { color: #fff; font-weight: bold; font-size: 12px; display: flex; align-items: center; gap: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .internal-address-bar { background: rgba(255,255,255,0.05); border: 1px solid transparent; color: #fff; font-family: inherit; font-size: 10px; padding: 4px 10px; width: 50%; border-radius: 6px; outline: none; transition: 0.3s; }
         .internal-address-bar:focus { border-color: var(--accent); }
         
-        .action-btns { display: flex; gap: 10px; align-items: center; }
+        .action-btns { display: flex; gap: 8px; align-items: center; min-width: fit-content; }
         .win-btn { width: 14px; height: 14px; border-radius: 50%; border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 8px; font-weight: bold; opacity: 0.8; color: transparent; transition: 0.2s; }
         .win-btn:hover { opacity: 1; color: #000; }
         .btn-close { background: #ff5f56; }
         .btn-min { background: #ffbd2e; }
         .btn-max { background: #27c93f; }
-        .btn-star { background: transparent; color: var(--accent); border: 1px solid var(--accent); opacity: 1; font-size: 9px;}
+        .btn-star { background: transparent; color: var(--accent); border: 1px solid var(--accent); opacity: 1; font-size: 9px; width: 16px; height: 16px;}
         .btn-star:hover { background: var(--accent); color: #000; }
         
-        .iframe-wrapper { flex: 1; background: #fff; position: relative; }
+        .iframe-wrapper { flex: 1; background: #fff; position: relative; -webkit-overflow-scrolling: touch; }
         iframe { width: 100%; height: 100%; border: none; }
         .drag-shield { position: absolute; inset: 0; z-index: 10; display: none; }
+        
         .holoframe.maximized { top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; border-radius: 0; resize: none; border: none; }
 
         /* --- BOTTOM DOCK --- */
         .bottom-dock {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; padding: 10px 25px;
             background: var(--bg-glass); border: 1px solid var(--border-glass); border-radius: 30px; backdrop-filter: blur(20px); z-index: 150; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 90vw; overflow-x: auto; scrollbar-width: none;
         }
-        .dock-app { width: 45px; height: 45px; border-radius: 12px; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.5); cursor: pointer; font-size: 20px; border: 1px solid transparent; transition: 0.3s; position: relative;}
+        .bottom-dock::-webkit-scrollbar { display: none; }
+        .dock-app { width: 45px; height: 45px; flex-shrink: 0; border-radius: 12px; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.5); cursor: pointer; font-size: 20px; border: 1px solid transparent; transition: 0.3s; position: relative;}
         .dock-app:hover { transform: translateY(-8px) scale(1.1); border-color: var(--accent); box-shadow: var(--bloom); }
         .minimized-indicator { width: 4px; height: 4px; background: var(--accent); border-radius: 50%; position: absolute; bottom: -8px; }
 
         /* Command Palette */
         #command-palette { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(15px); display: none; justify-content: center; padding-top: 15vh; z-index: 10000; }
-        .cmd-container { width: 100%; max-width: 600px; background: var(--bg-glass); border: 1px solid var(--accent); border-radius: 16px; box-shadow: var(--bloom); }
-        #cmd-input { width: 100%; background: transparent; border: none; outline: none; color: #fff; font-size: 1.5rem; padding: 20px; font-family: inherit; border-bottom: 1px solid var(--border-glass);}
+        .cmd-container { width: 90%; max-width: 600px; background: var(--bg-glass); border: 1px solid var(--accent); border-radius: 16px; box-shadow: var(--bloom); }
+        #cmd-input { width: 100%; background: transparent; border: none; outline: none; color: #fff; font-size: 1.2rem; padding: 20px; font-family: inherit; border-bottom: 1px solid var(--border-glass);}
+
+        /* =========================================
+           RESPONSIVE MOBILE ADAPTATION
+        ========================================= */
+        @media (max-width: 850px) {
+            #system-header { padding: 15px; flex-wrap: wrap; gap: 10px; }
+            .meta-row { display: none; } /* Hide technical metadata to save space */
+            .header-actions { width: 100%; justify-content: space-between; }
+            .header-search input { width: 60vw; }
+            #mobile-hud-btn { display: block; }
+            
+            /* Reposition Grid */
+            #desktop-app-grid { width: 100%; left: 0; top: 80px; padding: 15px; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 15px;}
+            .icon-box { width: 55px; height: 55px; font-size: 24px; }
+            
+            /* Native Fullscreen Apps on Mobile */
+            .holoframe {
+                top: 75px !important; 
+                left: 0 !important; 
+                width: 100vw !important; 
+                height: calc(100vh - 160px) !important; /* Leave room for header & dock */
+                border-radius: 0;
+                resize: none;
+                border-left: none; border-right: none;
+            }
+            .internal-address-bar { display: none; } /* Address bar takes too much space on mobile */
+            .holo-header { cursor: default; } /* Disable drag cursor on mobile */
+
+            /* Mobile Overlay HUD */
+            #right-hud {
+                position: fixed; top: 75px; left: 0; right: 0; width: 100vw; height: calc(100vh - 75px);
+                background: rgba(5,10,15,0.95); z-index: 300; padding: 20px; overflow-y: auto;
+                transform: translateX(100%); transition: transform 0.3s ease; display: block;
+            }
+            #right-hud.mobile-active { transform: translateX(0); }
+            
+            /* Bottom Dock Scrolling */
+            .bottom-dock { bottom: 10px; padding: 10px 15px; border-radius: 20px; justify-content: flex-start; }
+            .dock-app { width: 40px; height: 40px; font-size: 18px; }
+        }
     </style>
 </head>
 <body>
@@ -214,6 +266,9 @@
             <div class="meta-item">UPLINK: <span id="cur-traffic">VERIFYING...</span></div>
         </div>
         <div class="header-actions">
+            <button id="mobile-hud-btn" onclick="document.getElementById('right-hud').classList.toggle('mobile-active')">
+                <i class="fa-solid fa-layer-group"></i>
+            </button>
             <div class="header-search">
                 <input type="text" placeholder="Cmd+K to Command..." readonly onclick="toggleCommandPalette()">
             </div>
@@ -255,12 +310,10 @@
     const PROXY_URL = 'https://artemis-proxy-rcfq.onrender.com/';
 
     const ROUTING_MATRIX = {
-        // Domains that natively allow iframes or use specific bypasses (Saves Proxy Bandwidth)
         directAllow: [
             'google.com/search', 'youtube.com/embed', 'player.vimeo.com', 
             'wikipedia.org', 'vercel.app', 'onrender.com', 'catbox.moe', 'nexusvortex.ca'
         ],
-        // Sites that have DRM, aggressive Anti-Bot, or strict CORS where proxies fail.
         popOutAllow: [
             'netflix.com', 'chatgpt.com', 'openai.com', 'anthropic.com', 
             'claude.ai', 'bank', 'paypal.com', 'disneyplus.com', 'hulu.com',
@@ -269,17 +322,9 @@
     };
 
     function getProxiedUrl(targetUrl) {
-        // Prevent double proxying
         if (targetUrl.startsWith(PROXY_URL)) return targetUrl;
-        
         const urlLower = targetUrl.toLowerCase();
-        
-        // Direct Allowlist check
-        if (ROUTING_MATRIX.directAllow.some(domain => urlLower.includes(domain))) {
-            return targetUrl;
-        }
-        
-        // Default: Route through Artemis Proxy to strip X-Frame-Options
+        if (ROUTING_MATRIX.directAllow.some(domain => urlLower.includes(domain))) return targetUrl;
         return PROXY_URL + targetUrl;
     }
 
@@ -291,7 +336,8 @@
     let saveTimeout = null;
 
     const systems = {
-        ARTEMIS: { color: "#00f2ff", font: "'Courier New', monospace", bg: "https://cdn.pixabay.com/video/2023/10/20/185834-876615024_tiny.mp4" },
+        // Updated ARTEMIS background to the requested Catbox .mov
+        ARTEMIS: { color: "#00f2ff", font: "'Courier New', monospace", bg: "https://files.catbox.moe/f21cnc.mov" },
         APPLE: { color: "#ffffff", font: "-apple-system, sans-serif", bg: "https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop" },
         LINUX: { color: "#39ff14", font: "monospace", bg: "https://cdn.pixabay.com/video/2021/08/20/85732-590457611_tiny.mp4" },
         MICROSOFT: { color: "#00a4ef", font: "'Segoe UI', sans-serif", bg: "https://images.unsplash.com/photo-1635326445090-67f139618175?q=80&w=2070&auto=format&fit=crop" }
@@ -386,13 +432,15 @@
             const statePayload = {};
             Object.keys(threads).forEach(id => {
                 const el = document.getElementById(id);
+                // Only save coords if on Desktop. On mobile they are forcibly full-screen via CSS.
+                const isDesktop = window.innerWidth > 850;
                 if(el) {
                     statePayload[id] = {
                         ...threads[id],
-                        x: el.style.left || '100px',
-                        y: el.style.top || '100px',
-                        w: el.style.width || '900px',
-                        h: el.style.height || '600px'
+                        x: isDesktop ? el.style.left : '100px',
+                        y: isDesktop ? el.style.top : '100px',
+                        w: isDesktop ? el.style.width : '900px',
+                        h: isDesktop ? el.style.height : '600px'
                     };
                 }
             });
@@ -445,7 +493,11 @@
                 const el = document.createElement('div');
                 el.className = 'bookmark-item';
                 el.innerHTML = `<span>${b.icon}</span> <span>${b.app_name}</span>`;
-                el.onclick = () => spawnFrame(b.app_url, b.app_name, b.icon);
+                el.onclick = () => {
+                    spawnFrame(b.app_url, b.app_name, b.icon);
+                    // Auto-close HUD on mobile after selection
+                    if(window.innerWidth <= 850) document.getElementById('right-hud').classList.remove('mobile-active');
+                };
                 cont.appendChild(el);
             });
         }
@@ -459,16 +511,12 @@
         // 1. Check for Pop-Out requirement (DRM / Anti-Bot)
         if (ROUTING_MATRIX.popOutAllow.some(domain => urlLower.includes(domain))) {
             console.warn(`[OS] DRM/Security block detected for ${name}. Executing Smart Pop-Out.`);
-            
-            // Calculate screen center for the popup
             const width = Math.min(1200, window.innerWidth * 0.9);
             const height = Math.min(800, window.innerHeight * 0.9);
             const left = (window.innerWidth / 2) - (width / 2);
             const top = (window.innerHeight / 2) - (height / 2);
-            
-            // Open a standalone native window 
             window.open(finalUrl, name, `width=${width},height=${height},top=${top},left=${left},toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes`);
-            return; // Halt iframe creation
+            return; 
         }
 
         // 2. Standard Iframe Build
@@ -478,10 +526,16 @@
         let iframeSrc = getProxiedUrl(finalUrl);
 
         const offset = (Object.keys(threads).length % 5) * 30;
+        
+        // Responsive initial sizing
+        const isMobile = window.innerWidth <= 850;
+        const defaultW = isMobile ? '100%' : '900px';
+        const defaultH = isMobile ? '100%' : '600px';
+        
         const x = forceX || `${100 + offset}px`;
         const y = forceY || `${100 + offset}px`;
-        const w = forceW || `900px`;
-        const h = forceH || `600px`;
+        const w = forceW || defaultW;
+        const h = forceH || defaultH;
         const display = forceMin ? 'none' : 'flex';
 
         const markup = `
@@ -493,7 +547,7 @@
                         <button class="win-btn btn-max" onclick="toggleMaximize('${id}')">+</button>
                         <button class="win-btn btn-star" onclick="NexusCloud.toggleBookmark('${name}', '${finalUrl}', '${icon}')">★</button>
                     </div>
-                    <div class="window-title">${icon} ${name}</div>
+                    <div class="window-title">${icon} <span style="text-overflow: ellipsis; white-space: nowrap; overflow: hidden; max-width: 150px;">${name}</span></div>
                     <input type="text" class="internal-address-bar" id="addr-${id}" value="${finalUrl}" onkeypress="if(event.key==='Enter') navigateInternal('${id}')">
                 </div>
                 <div class="iframe-wrapper">
@@ -519,22 +573,16 @@
         
         const urlLower = url.toLowerCase();
         
-        // Check Matrix on manual URL entry
         if (ROUTING_MATRIX.popOutAllow.some(domain => urlLower.includes(domain))) {
-            console.warn(`[OS] DRM/Security block detected. Executing Smart Pop-Out.`);
             const width = Math.min(1200, window.innerWidth * 0.9);
             const height = Math.min(800, window.innerHeight * 0.9);
             const left = (window.innerWidth / 2) - (width / 2);
             const top = (window.innerHeight / 2) - (height / 2);
-            
             window.open(url, '_blank', `width=${width},height=${height},top=${top},left=${left},toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes`);
-            
-            // Revert the address bar to keep the current iframe intact
             input.value = iframe.src.replace(PROXY_URL, '');
             return;
         }
 
-        // Pass safe manual URL entry through Edge Router
         iframe.src = getProxiedUrl(url);
         threads[id].url = url; 
         NexusCloud.triggerSave();
@@ -544,6 +592,8 @@
         if (document.getElementById(id)) document.getElementById(id).style.zIndex = ++highestZ;
     }
     function toggleMaximize(id) {
+        // Prevent maximize toggle on mobile since it's forced fullscreen via CSS
+        if(window.innerWidth <= 850) return; 
         document.getElementById(id).classList.toggle('maximized');
         NexusCloud.triggerSave();
     }
@@ -588,23 +638,45 @@
         let isDragging = false, startX, startY, initX, initY;
 
         header.onmousedown = (e) => {
-            if(e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || el.classList.contains('maximized')) return;
+            // Disable dragging on mobile or if maximized
+            if(e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || el.classList.contains('maximized') || window.innerWidth <= 850) return;
             isDragging = true; shield.style.display = 'block';
             startX = e.clientX; startY = e.clientY; initX = el.offsetLeft; initY = el.offsetTop;
         };
+        // Touch support for dragging on larger tablets
+        header.ontouchstart = (e) => {
+            if(e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || el.classList.contains('maximized') || window.innerWidth <= 850) return;
+            isDragging = true; shield.style.display = 'block';
+            startX = e.touches[0].clientX; startY = e.touches[0].clientY; initX = el.offsetLeft; initY = el.offsetTop;
+        };
+
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
             el.style.left = `${initX + (e.clientX - startX)}px`;
             el.style.top = `${initY + (e.clientY - startY)}px`;
         });
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            el.style.left = `${initX + (e.touches[0].clientX - startX)}px`;
+            el.style.top = `${initY + (e.touches[0].clientY - startY)}px`;
+        });
+
         document.addEventListener('mouseup', () => {
             if (isDragging) {
                 isDragging = false; shield.style.display = 'none';
                 NexusCloud.triggerSave(); 
             }
         });
+        document.addEventListener('touchend', () => {
+            if (isDragging) {
+                isDragging = false; shield.style.display = 'none';
+                NexusCloud.triggerSave(); 
+            }
+        });
 
-        const observer = new ResizeObserver(() => NexusCloud.triggerSave());
+        const observer = new ResizeObserver(() => {
+            if(window.innerWidth > 850) NexusCloud.triggerSave();
+        });
         observer.observe(el);
     }
 
@@ -618,12 +690,15 @@
         document.getElementById('active-mode-display').innerText = modeName;
         
         const videoEl = document.getElementById('video-bg'), imageEl = document.getElementById('image-bg');
-        if (/\.(mp4|webm|ogg)$/i.test(config.bg)) {
+        if (/\.(mp4|webm|ogg|mov)$/i.test(config.bg)) {
             imageEl.style.opacity = '0'; videoEl.src = config.bg; videoEl.style.opacity = '1';
         } else {
             videoEl.style.opacity = '0'; imageEl.style.backgroundImage = `url(${config.bg})`; imageEl.style.opacity = '1';
         }
         localStorage.setItem('artemis-mode', modeName);
+        
+        // Auto-close HUD on mobile after mode switch
+        if(window.innerWidth <= 850) document.getElementById('right-hud').classList.remove('mobile-active');
     }
     
     function renderDesktopApps() {
@@ -639,8 +714,13 @@
 
     function toggleCommandPalette() {
         const p = document.getElementById('command-palette'), i = document.getElementById('cmd-input');
-        if (p.style.display === 'flex') p.style.display = 'none';
-        else { p.style.display = 'flex'; i.value = ''; i.focus(); }
+        if (p.style.display === 'flex') {
+            p.style.display = 'none';
+        } else { 
+            p.style.display = 'flex'; 
+            i.value = ''; 
+            setTimeout(() => i.focus(), 100); // slight delay for mobile keyboard
+        }
     }
     document.getElementById('cmd-input').addEventListener('keydown', (e) => {
         if(e.key === 'Enter' && e.target.value.trim()) {
